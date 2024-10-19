@@ -3136,9 +3136,9 @@ X_COLD:
 	LD	DE,FLAST		        ;Where the table's going
 	LD	BC,NEXTS2-START_TABLE	;Bytes to copy
 	LDIR				   ;
-	LD	HL,W_TASK		   ; Copy TASK to ram
+	LD	HL,W_RESET		   ; Copy last word to ram -- need to update when creating a NEW WORD
 	LD	DE,VOCAB_BASE	   ; Where it's going
-	LD	BC,W_TASKEND-W_TASK;Bytes to copy
+	LD	BC,W_RESET_END-W_RESET ;Bytes to copy
 	LDIR				   ;
 	LD	BC,FIRSTWORD	   ;BC to first forth word
 	LD	HL,(WORD1)		;Get stack pointer
@@ -4508,7 +4508,7 @@ C_TASK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 W_TASKEND:
 
-W_EDITI:
+W_EDITI: ; what is that?
 
 W_CLEAR:				;Clear block n
 	.BYTE	85h
@@ -4524,6 +4524,18 @@ C_CLEAR:
 	.WORD	C_BBUF			;Put number of bytes/block on stack
 	.WORD	C_ERASE			;Clear the block
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+
+W_RESET:
+	.byte	85h				; 0x80 + length
+	.ascii	"RESE"
+	.byte	'T'+0x80
+	.word	W_CLEAR			; link to previous word
+	.WORD	2+$			;Vector to code
+aSystemReset:
+	LD   C,0x00         ;API 0x00
+	RST  0x30           ;  = System reset
+	JP   X_STOP			; is this needed?
+W_RESET_END:
 
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code
@@ -4581,6 +4593,7 @@ BREAKKEY:
 
 CHR_WR:					;Character out
     AND 7Fh         ;To knock off end of word marker
+	; if I want to support UTF-8 this will need to be solved better
     RST 08h
 	RET
 
