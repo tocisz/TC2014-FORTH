@@ -46,7 +46,7 @@ MAX_DISK_BLOCKS = (DISK_END-DISK_START)/BLOCK_SIZE
 BACKSPACE:
 	.WORD	0008h			;Backspace chr
 
-WORD1:
+WORD1: ; copied by C_WARM to S0 and onward
 	.WORD	DATA_STACK
 DEF_SYSADDR:
 	.WORD	SYSTEM
@@ -54,7 +54,7 @@ DEF_SYSADDR:
 	.WORD	001Fh			;Word name length (default 31)
 	.WORD	0000h			;Error message control number
 	.WORD	VOCAB_BASE		;FORGET protection
-	.WORD	VOCAB_BASE+0Bh		;Dictionary pointer
+	.WORD	VOCAB_BASE+(W_TASKEND-W_TASK) ;Dictionary pointer -- this should match length of a last word????
 	.WORD	E_FORTH			;Most recently created vocab.
 
 START_TABLE:
@@ -119,7 +119,7 @@ NEXTADDR:
 .set last_word_address, 0000h ;First word in vocabulary
 
 W_LIT:					;Puts next 2 bytes on the stack
-	define_word(`LIT')
+	define_word(`lit')
 C_LIT:
 	.WORD	2+$			;Vector to code
 	LD	A,(BC)			;Gets next word from (BC)
@@ -132,14 +132,14 @@ C_LIT:
 
 
 W_EXECUTE:				;Jump to address on stack
-	define_word(`EXECUTE')
+	define_word(`execute')
 C_EXECUTE:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get addr off data stack
 	JP	NEXTADDR		;Basically JP (HL)
 
 W_BRANCH:				;Add following offset to BC
-	define_word(`BRANCH')
+	define_word(`branch')
 C_BRANCH:
 	.WORD	2+$			;Vector to code
 X_BRANCH:
@@ -155,7 +155,7 @@ X_BRANCH:
 	JP	NEXT			;Go do it
 
 W_0BRANCH:				;Add offset to BC if stack top = 0
-	define_word(`0BRANCH')
+	define_word(`0branch')
 C_0BRANCH:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get value off stack
@@ -167,7 +167,7 @@ C_0BRANCH:
 	JP	NEXT			;Continue execution
 
 W_LLOOP:				;Increment loop & branch if not done
-	define_word(`<LOOP>')
+	define_word(`<loop>')
 C_LLOOP:
 	.WORD	2+$			;Vector to code
 	LD	DE,0001
@@ -208,14 +208,14 @@ TEST_LIMIT:
 	JP	NEXT
 
 W_PLOOP:				;Loop + stack & branch if not done
-	define_word(`<+LOOP>')
+	define_word(`<+loop>')
 C_PLOOP:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get value from stack
 	JR	C_ILOOP			;Go do loop increment
 
 W_LDO:					;Put start & end loop values on RPP
-	define_word(`<DO>')
+	define_word(`<do>')
 C_LDO:
 	.WORD	 2+$
 	LD	HL,(RPP)		;Get return stack pointer
@@ -236,7 +236,7 @@ C_LDO:
 	JP	NEXT
 
 W_I:					;Copy LOOP index to data stack
-	define_word(`I')
+	define_word(`i')
 C_I:
 	.WORD	 2+$
 X_I:
@@ -249,7 +249,7 @@ X_I2:
 	JP	NEXT
 
 W_DIGIT:				;Convert digit n2 using base n1
-	define_word(`DIGIT')
+	define_word(`digit')
 C_DIGIT:
 	.WORD	2+$
 	POP	HL			;Get base to use
@@ -273,7 +273,7 @@ NDIGIT:
 	JP	NEXTS1			;Save & NEXT
 
 W_FIND:					;Find word & return vector,byte & flag
-	define_word(`<FIND>')
+	define_word(`<find>')
 C_FIND:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get pointer to next vocabulary word
@@ -325,7 +325,7 @@ END_CHR:
 	JP	NEXTS1			;Save & NEXT
 
 W_ENCLOSE:
-	define_word(`ENCLOSE')
+	define_word(`enclose')
 C_ENCLOSE:
 	.WORD	2+$			;Vector to code
 	POP	DE			; get delimiter character
@@ -380,7 +380,7 @@ J2218:
 	JP	NEXT			; done
 
 W_EMIT:					;Output CHR from stack
-	define_word(`EMIT')
+	define_word(`emit')
 C_EMIT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UEMIT			;Put UEMIT addr on stack
@@ -392,14 +392,14 @@ C_EMIT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_KEY:					;Wait for key, value on stack
-	define_word(`KEY')
+	define_word(`key')
 C_KEY:
 	.WORD	2+$			;Vector to code
 	LD	HL,(UKEY)		;Get the vector
 	JP	(HL)			;Jump to it
 
 W_TERMINAL:
-	define_word(`?TERMINAL')
+	define_word(`?terminal')
 C_TERMINAL:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UTERMINAL
@@ -408,7 +408,7 @@ C_TERMINAL:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CR:					    ;Output [CR][LF]
-	define_word(`CR')
+	define_word(`cr')
 C_CR:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UCR			;Push UCR addr
@@ -417,7 +417,7 @@ C_CR:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CLS:					    ;Clear screen
-	define_word(`CLS')
+	define_word(`cls')
 C_CLS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Put clear screen code on stack
@@ -426,7 +426,7 @@ C_CLS:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CMOVE:				;Move block
-	define_word(`CMOVE')
+	define_word(`cmove')
 C_CMOVE:
 	.WORD	2+$			;Vector to code
 	LD	L,C			;Save BC for now
@@ -443,7 +443,7 @@ NO_BYTES:
 	JP	NEXT
 
 W_USTAR:				;Unsigned multiply
-	define_word(`U*')
+	define_word(`u*')
 C_USTAR:
 	.WORD	2+$			;Vector to code
 	POP	DE			; get n2
@@ -482,7 +482,7 @@ NO_MUL:
 	RET				;
 
 W_UMOD:					;Unsigned divide & MOD
-	define_word(`U/MOD')
+	define_word(`u/mod')
 C_UMOD:
 	.WORD	2+$			;Vector to code
 	LD	HL,0004
@@ -546,7 +546,7 @@ J2301:
 	JP	NEXT
 
 W_AND:					;AND
-	define_word(`AND')
+	define_word(`and')
 C_AND:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get n1 off stack
@@ -560,7 +560,7 @@ C_AND:
 	JP	NEXTS1			;Save & next
 
 W_OR:					;OR
-	define_word(`OR')
+	define_word(`or')
 C_OR:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get n1 off stack
@@ -574,7 +574,7 @@ C_OR:
 	JP	NEXTS1			;Save & next
 
 W_XOR:					;XOR
-	define_word(`XOR')
+	define_word(`xor')
 C_XOR:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get n1 off stack
@@ -588,7 +588,7 @@ C_XOR:
 	JP	NEXTS1			;Save & NEXT
 
 W_SPFETCH:				;Stack pointer onto stack
-	define_word(`SP@')
+	define_word(`sp@')
 C_SPFETCH:
 	.WORD	2+$			;Vector to code
 	LD	HL,0000			;No offset
@@ -596,7 +596,7 @@ C_SPFETCH:
 	JP	NEXTS1			;Save & NEXT
 
 W_SPSTORE:				;Set initial stack pointer value
-	define_word(`SP!')
+	define_word(`sp!')
 C_SPSTORE:
 	.WORD	2+$			;Vector to code
 	LD	HL,(DEF_SYSADDR)	;Get system base addr
@@ -610,18 +610,18 @@ C_SPSTORE:
 	JP	NEXT
 
 W_RPFETCH:				;Get return stack pointer
-	define_word(`RP@')
+	define_word(`rp@')
 C_RPFETCH:
 	.WORD	2+$			;Vector to code
 	LD	HL,(RPP)		;Return stack pointer into HL
 	JP	NEXTS1			;Save & NEXT
 
 W_RPSTORE:				;Set initial return stack pointer
-	define_word(`RP!')
+	define_word(`rp!')
 C_RPSTORE:
 	.WORD	2+$			;Vector to code
 	LD	HL,(DEF_SYSADDR)	;Get system base addr
-	LD	DE,0008			;Offset to return stack pointer value
+	LD	DE,R0-SYSTEM	;Offset to return stack pointer value
 	ADD	HL,DE			;Add to base addr
 	LD	E,(HL)			;Get SP from ram
 	INC	HL			;
@@ -631,7 +631,7 @@ C_RPSTORE:
 	JP	NEXT
 
 W_STOP:					;Pop BC from return stack (=next)
-	define_word(`;S')
+	define_word(`;s')
 C_STOP:
 	.WORD	2+$			;Vector to code
 X_STOP:
@@ -644,7 +644,7 @@ X_STOP:
 	JP	NEXT
 
 W_LEAVE:				;Quit loop by making index = limit
-	define_word(`LEAVE')
+	define_word(`leave')
 C_LEAVE:
 	.WORD	2+$			;Vector to code
 	LD	HL,(RPP)		;Get return stack pointer
@@ -658,7 +658,7 @@ C_LEAVE:
 	JP	NEXT
 
 W_MOVER:				;Move from data to return stack
-	define_word(`>R')
+	define_word(`>r')
 C_MOVER:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get value
@@ -672,7 +672,7 @@ C_MOVER:
 	JP	NEXT
 
 W_RMOVE:				;Move word from return to data stack
-	define_word(`R>')
+	define_word(`r>')
 C_RMOVE:
 	.WORD	2+$			;Vector to code
 	LD	HL,(RPP)		;Get return stack pointer
@@ -685,7 +685,7 @@ C_RMOVE:
 	JP	NEXT
 
 W_RFETCH:				;Return stack top to data stack
-	define_word(`R@')
+	define_word(`r@')
 C_RFETCH:
 	.WORD	X_I			;Return stack top to data stack
 
@@ -704,7 +704,7 @@ NO_ZERO:
 	JP	NEXTS1			;Save & NEXT
 
 W_NOT:					;Convert flag, same as 0=
-	define_word(`NOT')
+	define_word(`not')
 C_NOT:
 	.WORD	X_0EQUALS
 
@@ -730,7 +730,7 @@ C_PLUS:
 	JP	NEXTS1			;Save & NEXT
 
 W_DPLUS:				;32 bit add
-	define_word(`D+')
+	define_word(`d+')
 C_DPLUS:
 	.WORD	2+$			;Vector to code
 	LD	HL,0006			; offset to low word
@@ -757,7 +757,7 @@ C_DPLUS:
 	JP	NEXTS2			;Save 32 bit result & NEXT
 
 W_NEGATE:				;Form 2s complement of n
-	define_word(`NEGATE')
+	define_word(`negate')
 C_NEGATE:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get number
@@ -771,7 +771,7 @@ C_NEGATE:
 	JP	NEXTS1			;Save & NEXT
 
 W_DNEGATE:				;Form 2s complement of 32 bit n
-	define_word(`DNEGATE')
+	define_word(`dnegate')
 C_DNEGATE:
 	.WORD	2+$			;Vector to code
 	POP	HL			; get high word
@@ -791,7 +791,7 @@ C_DNEGATE:
 	JP	NEXTS2			;Save 32 bit result & NEXT
 
 W_OVER:					;Copy 2nd down to top of stack
-	define_word(`OVER')
+	define_word(`over')
 C_OVER:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get top
@@ -800,14 +800,14 @@ C_OVER:
 	JP	NEXTS2			;Save both & NEXT
 
 W_DROP:					;Drop top value from stack
-	define_word(`DROP')
+	define_word(`drop')
 C_DROP:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get top value
 	JP	NEXT
 
 W_2DROP:				;Drop top two values from stack
-	define_word(`2DROP')
+	define_word(`2drop')
 C_2DROP:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get top value
@@ -815,7 +815,7 @@ C_2DROP:
 	JP	NEXT
 
 W_SWAP:					;Swap top 2 values on stack
-	define_word(`SWAP')
+	define_word(`swap')
 C_SWAP:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get top value
@@ -823,7 +823,7 @@ C_SWAP:
 	JP	NEXTS1			;Save & NEXT
 
 W_DUP:					;Duplicate top value on stack
-	define_word(`DUP')
+	define_word(`dup')
 C_DUP:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get value off stack
@@ -831,7 +831,7 @@ C_DUP:
 	JP	NEXTS1			;Save & NEXT
 
 W_2DUP:					;Dup top 2 values on stack
-	define_word(`2DUP')
+	define_word(`2dup')
 C_2DUP:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get top two values from stack
@@ -841,7 +841,7 @@ C_2DUP:
 	JP	NEXTS2			;Save both & NEXT
 
 W_BOUNDS:				;Convert address & n to start & end
-	define_word(`BOUNDS')
+	define_word(`bounds')
 C_BOUNDS:
 	.WORD	2+$			;Vector to code
 	POP	HL			; get n
@@ -866,7 +866,7 @@ C_PLUSSTORE:
 	JP	NEXT
 
 W_TOGGLE:				;XOR (addr) with byte
-	define_word(`TOGGLE')
+	define_word(`toggle')
 C_TOGGLE:
 	.WORD	2+$			;Vector to code
 	POP	DE			 	;Get byte
@@ -888,7 +888,7 @@ C_FETCH:
 	JP	NEXT
 
 W_CFETCH:				;Get byte from addr on stack
-	define_word(`C@')
+	define_word(`c@')
 C_CFETCH:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get addr
@@ -927,7 +927,7 @@ C_STORE:
 	JP	NEXT
 
 W_CSTORE:				;Store byte at addr
-	define_word(`C!')
+	define_word(`c!')
 C_CSTORE:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get addr
@@ -990,7 +990,7 @@ C_SEMICOLON:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CONSTANT:
-	define_word(`CONSTANT')
+	define_word(`constant')
 C_CONSTANT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_XXX1
@@ -1008,7 +1008,7 @@ X_CONSTANT:				;Put next word on stack
 	JP	NEXT
 
 W_VARIABLE:
-	define_word(`VARIABLE')
+	define_word(`variable')
 C_VARIABLE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -1021,7 +1021,7 @@ X_VARIABLE:
 	JP	NEXT
 
 W_USER:
-	define_word(`USER')
+	define_word(`user')
 C_USER:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CONSTANT
@@ -1062,13 +1062,13 @@ C_3:
 	.WORD	0003h
 
 W_BL:					;Leaves ASCII for blank on stack
-	define_word(`BL')
+	define_word(`bl')
 C_BL:
 	.WORD	X_CONSTANT		;Put next word on stack
 	.WORD	0020h
 
 W_CL:
-	define_word(`C/L')
+	define_word(`c/l')
 C_CL:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UCL
@@ -1076,7 +1076,7 @@ C_CL:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_FIRST:
-	define_word(`FIRST')
+	define_word(`first')
 C_FIRST:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UFIRST		;Put UFIRST addr on stack
@@ -1084,7 +1084,7 @@ C_FIRST:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LIMIT:
-	define_word(`LIMIT')
+	define_word(`limit')
 C_LIMIT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ULIMIT		;Put ULIMIT on stack
@@ -1092,7 +1092,7 @@ C_LIMIT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_BBUF:
-	define_word(`B/BUF')
+	define_word(`b/buf')
 C_BBUF:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UBBUF
@@ -1100,7 +1100,7 @@ C_BBUF:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_BSCR:
-	define_word(`B/SCR')
+	define_word(`b/scr')
 C_BSCR:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UBSCR			;Number of buffers per block
@@ -1108,313 +1108,313 @@ C_BSCR:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_S0:					;Push S0 (initial data stack pointer)
-	define_word(`S0')
+	define_word(`s0')
 C_S0:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	S0-SYSTEM
 
 W_R0:
-	define_word(`R0')
+	define_word(`r0')
 C_R0:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	R0-SYSTEM
 
 W_TIB:
-	define_word(`TIB')
+	define_word(`tib')
 C_TIB:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	TIB-SYSTEM
 
 W_WIDTH:
-	define_word(`WIDTH')
+	define_word(`width')
 C_WIDTH:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	WIDTH-SYSTEM
 
 W_WARNING:				;Put WARNING addr on stack
-	define_word(`WARNING')
+	define_word(`warning')
 C_WARNING:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	WARNING-SYSTEM
 
 W_FENCE:
-	define_word(`FENCE')
+	define_word(`fence')
 C_FENCE:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	FENCE-SYSTEM
 
 W_DP:					;Dictionary pointer addr on stack
-	define_word(`DP')
+	define_word(`dp')
 C_DP:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	DP-SYSTEM
 
 W_VOC_LINK:
-	define_word(`VOC-LINK')
+	define_word(`voc-link')
 C_VOC_LINK:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	VOC_LINK-SYSTEM
 
 W_BLK:
-	define_word(`BLK')
+	define_word(`blk')
 C_BLK:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	BLK-SYSTEM
 
 W_TOIN:
-	define_word(`>IN')
+	define_word(`>in')
 C_TOIN:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	TOIN-SYSTEM
 
 W_OUT:					;Put OUT buffer count addr on stack
-	define_word(`OUT')
+	define_word(`out')
 C_OUT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	OUT-SYSTEM
 
 W_SCR:
-	define_word(`SCR')
+	define_word(`scr')
 C_SCR:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	SCR-SYSTEM
 
 W_OFFSET:				;Put disk block offset on stack
-	define_word(`OFFSET')
+	define_word(`offset')
 C_OFFSET:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	OFFSET-SYSTEM
 
 W_CONTEXT:
-	define_word(`CONTEXT')
+	define_word(`context')
 C_CONTEXT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	CONTEXT-SYSTEM
 
 W_CURRENT:
-	define_word(`CURRENT')
+	define_word(`current')
 C_CURRENT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	CURRENT-SYSTEM
 
 W_STATE:				;Push STATE addr
-	define_word(`STATE')
+	define_word(`state')
 C_STATE:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	STATE-SYSTEM
 
 W_BASE:					;Put BASE addr on stack
-	define_word(`BASE')
+	define_word(`base')
 C_BASE:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	BASE-SYSTEM
 
 W_DPL:
-	define_word(`DPL')
+	define_word(`dpl')
 C_DPL:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	DPL-SYSTEM
 
 W_FLD:
-	define_word(`FLD')
+	define_word(`fld')
 C_FLD:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	FLD-SYSTEM
 
 W_CSP:					;Push check stack pointer addr
-	define_word(`CSP')
+	define_word(`csp')
 C_CSP:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	CSP-SYSTEM
 
 W_RHASH:
-	define_word(`R#')
+	define_word(`r#')
 C_RHASH:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RHASH-SYSTEM
 
 W_HLD:
-	define_word(`HLD')
+	define_word(`hld')
 C_HLD:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	HLD-SYSTEM
 
 W_UCL:
-	define_word(`UC/L')
+	define_word(`uc/l')
 C_UCL:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UCL-SYSTEM
 
 W_UFIRST:
-	define_word(`UFIRST')
+	define_word(`ufirst')
 C_UFIRST:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UFIRST-SYSTEM
 
 W_ULIMIT:
-	define_word(`ULIMIT')
+	define_word(`ulimit')
 C_ULIMIT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	ULIMIT-SYSTEM
 
 W_UBBUF:
-	define_word(`UB/BUF')
+	define_word(`ub/buf')
 C_UBBUF:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UBBUF-SYSTEM
 
 W_UBSCR:
-	define_word(`UB/SCR')
+	define_word(`ub/scr')
 C_UBSCR:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UBSCR-SYSTEM
 
 W_UTERMINAL:
-	define_word(`U?TERMINAL')
+	define_word(`u?terminal')
 C_UTERMINAL:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UTERMINAL-SYSTEM
 
 W_UKEY:					;Put UKEY addr on stack
-	define_word(`UKEY')
+	define_word(`ukey')
 C_UKEY:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UKEY-SYSTEM
 
 W_UEMIT:				;Put UEMIT addr on stack
-	define_word(`UEMIT')
+	define_word(`uemit')
 C_UEMIT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UEMIT-SYSTEM
 
 W_UCR:					;Push UCR addr
-	define_word(`UCR')
+	define_word(`ucr')
 C_UCR:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UCR-SYSTEM
 
 W_URW:
-	define_word(`UR/W')
+	define_word(`ur/w')
 C_URW:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	URW-SYSTEM
 
 W_UABORT:				;Put UABORT on stack
-	define_word(`UABORT')
+	define_word(`uabort')
 C_UABORT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UABORT-SYSTEM
 
 W_RAF:
-	define_word(`RAF')
+	define_word(`raf')
 C_RAF:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RAF-SYSTEM
 
 W_RBC:
-	define_word(`RBC')
+	define_word(`rbc')
 C_RBC:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RBC-SYSTEM
 
 W_RDE:
-	define_word(`RDE')
+	define_word(`rde')
 C_RDE:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RDE-SYSTEM
 
 W_RHL:
-	define_word(`RHL')
+	define_word(`rhl')
 C_RHL:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RHL-SYSTEM
 
 W_RIX:
-	define_word(`RIX')
+	define_word(`rix')
 C_RIX:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RIX-SYSTEM
 
 W_RIY:
-	define_word(`RIY')
+	define_word(`riy')
 C_RIY:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RIY-SYSTEM
 
 W_RAF2:
-	define_comma_word(`RAF')
+	define_comma_word(`raf')
 C_RAF2:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RAF2-SYSTEM
 
 W_RBC2:
-	define_comma_word(`RBC')
+	define_comma_word(`rbc')
 C_RBC2:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RBC2-SYSTEM
 
 W_RDE2:
-	define_comma_word(`RDE')
+	define_comma_word(`rde')
 C_RDE2:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RDE2-SYSTEM
 
 W_RHL2:
-	define_comma_word(`RHL')
+	define_comma_word(`rhl')
 C_RHL2:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RHL2-SYSTEM
 
 W_RA:
-	define_word(`RA')
+	define_word(`ra')
 C_RA:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RAF+1-SYSTEM
 
 W_RF:
-	define_word(`RF')
+	define_word(`rf')
 C_RF:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RAF-SYSTEM
 
 W_RB:
-	define_word(`RB')
+	define_word(`rb')
 C_RB:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RBC+1-SYSTEM
 
 W_RC:
-	define_word(`RC')
+	define_word(`rc')
 C_RC:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RBC-SYSTEM
 
 W_RD:
-	define_word(`RD')
+	define_word(`rd')
 C_RD:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RDE+1-SYSTEM
 
 W_RE:
-	define_word(`RE')
+	define_word(`re')
 C_RE:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RDE-SYSTEM
 
 W_RH:
-	define_word(`RH')
+	define_word(`rh')
 C_RH:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RHL+1-SYSTEM
 
 W_RL:
-	define_word(`RL')
+	define_word(`rl')
 C_RL:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RHL-SYSTEM
 
 W_CALL:
-	define_word(`CALL')
+	define_word(`call')
 C_CALL:
 	.WORD	2+$			;Vector to code
 	POP	HL			;Address of routine CALLed
@@ -1479,7 +1479,7 @@ C_2MINUS:
 	JP	NEXTS1			; save result & NEXT
 
 W_HERE:					;Dictionary pointer onto stack
-	define_word(`HERE')
+	define_word(`here')
 C_HERE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DP			;Dictionary pointer addr on stack
@@ -1487,7 +1487,7 @@ C_HERE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_ALLOT:
-	define_word(`ALLOT')
+	define_word(`allot')
 C_ALLOT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DP			;Dictionary pointer addr on stack
@@ -1505,7 +1505,7 @@ C_COMMA:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CCOMMA:
-	define_comma_word(`C')
+	define_comma_word(`c')
 C_CCOMMA:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_HERE			;Dictionary pointer onto stack
@@ -1561,7 +1561,7 @@ J2997:
 	JP	NEXTS1			;Save & NEXT
 
 W_ULESS:				;IF stack-1 < stack_top leave true flag
-	define_word(`U<')
+	define_word(`u<')
 C_ULESS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_2DUP			;Dup top 2 values on stack
@@ -1589,7 +1589,7 @@ C_GREATER:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_ROT:					;3rd valu down to top of stack
-	define_word(`ROT')
+	define_word(`rot')
 C_ROT:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Top value
@@ -1598,7 +1598,7 @@ C_ROT:
 	JP	NEXTS2			;Save both & NEXT
 
 W_PICK:
-	define_word(`PICK')
+	define_word(`pick')
 C_PICK:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DUP			;Duplicate top value on stack
@@ -1609,7 +1609,7 @@ C_PICK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_SPACE:
-	define_word(`SPACE')
+	define_word(`space')
 C_SPACE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BL			;Leaves ASCII for space on stack
@@ -1617,7 +1617,7 @@ C_SPACE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_QUERYDUP:
-	define_word(`?DUP')
+	define_word(`?dup')
 C_QUERYDUP:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DUP			;Duplicate top value on stack
@@ -1628,7 +1628,7 @@ B0002:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_TRAVERSE:
-	define_word(`TRAVERSE')
+	define_word(`traverse')
 C_TRAVERSE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_SWAP			;Swap top 2 values on stack
@@ -1647,7 +1647,7 @@ B0054:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LATEST:
-	define_word(`LATEST')
+	define_word(`latest')
 C_LATEST:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CURRENT
@@ -1656,7 +1656,7 @@ C_LATEST:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LFA:
-	define_word(`LFA')
+	define_word(`lfa')
 C_LFA:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -1665,7 +1665,7 @@ C_LFA:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CFA:
-	define_word(`CFA')
+	define_word(`cfa')
 C_CFA:
 	.WORD	2+$			;Vector to code
 	POP	HL			    ; get n
@@ -1674,7 +1674,7 @@ C_CFA:
 	JP	NEXTS1			; save result & NEXT
 
 W_NFA:
-	define_word(`NFA')
+	define_word(`nfa')
 C_NFA:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -1686,7 +1686,7 @@ C_NFA:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_PFA:					    ;Convert NFA to PFA
-	define_word(`PFA')
+	define_word(`pfa')
 C_PFA:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_1			    ;Traverse up memory
@@ -1697,7 +1697,7 @@ C_PFA:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CSPSTORE:
-	define_word(`!CSP')
+	define_word(`!csp')
 C_CSPSTORE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_SPFETCH		;Stack pointer onto stack
@@ -1706,7 +1706,7 @@ C_CSPSTORE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_QERROR:
-	define_word(`?ERROR')
+	define_word(`?error')
 C_QERROR:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_SWAP			;Swap top 2 values on stack
@@ -1721,7 +1721,7 @@ B0004:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_QCOMP:				;Error if not in compile mode
-	define_word(`?COMP')
+	define_word(`?comp')
 C_QCOMP:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_STATE			;Push STATE addr
@@ -1733,7 +1733,7 @@ C_QCOMP:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_QEXEC:				;Error not if not in execute mode
-	define_word(`?EXEC')
+	define_word(`?exec')
 C_QEXEC:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_STATE			;Push STATE addr
@@ -1744,7 +1744,7 @@ C_QEXEC:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_QPAIRS:
-	define_word(`?PAIRS')
+	define_word(`?pairs')
 C_QPAIRS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MINUS
@@ -1754,7 +1754,7 @@ C_QPAIRS:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_WHATSTACK:				;Check stack pointer, error if not ok
-	define_word(`?CSP')
+	define_word(`?csp')
 C_WHATSTACK:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_SPFETCH		;Stack pointer onto stack
@@ -1767,7 +1767,7 @@ C_WHATSTACK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_QLOADING:
-	define_word(`?LOADING')
+	define_word(`?loading')
 C_QLOADING:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BLK
@@ -1779,7 +1779,7 @@ C_QLOADING:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_COMPILE:
-	define_word(`COMPILE')
+	define_word(`compile')
 C_COMPILE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_QCOMP			;Error if not in compile mode
@@ -1811,7 +1811,7 @@ C_RIGHTBRKT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_SMUDGE:
-	define_word(`SMUDGE')
+	define_word(`smudge')
 C_SMUDGE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LATEST		;Push top words NFA
@@ -1821,7 +1821,7 @@ C_SMUDGE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_HEX:
-	define_word(`HEX')
+	define_word(`hex')
 C_HEX:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -1831,7 +1831,7 @@ C_HEX:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DECIMAL:				;Sets decimal mode
-	define_word(`DECIMAL')
+	define_word(`decimal')
 C_DECIMAL:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -1841,7 +1841,7 @@ C_DECIMAL:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CCODE:				;Stop compillation & terminate word
-	define_word(`<;CODE>')
+	define_word(`<;code>')
 C_CCODE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_RMOVE			;Move word from return to data stack
@@ -1852,7 +1852,7 @@ C_CCODE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_SCCODE:
-	define_immediate_word(`;CODE')
+	define_immediate_word(`;code')
 C_SCCODE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_WHATSTACK		;Check stack pointer, error if not ok
@@ -1863,7 +1863,7 @@ C_SCCODE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CREATE:
-	define_word(`CREATE')
+	define_word(`create')
 C_CREATE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -1871,7 +1871,7 @@ C_CREATE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DOES:
-	define_word(`DOES>')
+	define_word(`does>')
 C_DOES:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_RMOVE			;Move word from return to data stack
@@ -1896,7 +1896,7 @@ X_DOES:
 	JP	NEXTS1			;Save & NEXT
 
 W_COUNT:				;Convert string at addr to addr + length
-	define_word(`COUNT')
+	define_word(`count')
 C_COUNT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DUP			;Duplicate address
@@ -1906,7 +1906,7 @@ C_COUNT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_TYPE:					    ;Output n bytes from addr
-	define_word(`TYPE')
+	define_word(`type')
 C_TYPE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_QUERYDUP		;Copy length if length <> 0
@@ -1930,7 +1930,7 @@ B0006:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_TRAILING:
-	define_word(`-TRAILING')
+	define_word(`-trailing')
 C_TRAILING:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DUP			;Duplicate top value on stack
@@ -2003,7 +2003,7 @@ B000B:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_EXPECT:
-	define_word(`EXPECT')
+	define_word(`expect')
 C_EXPECT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_OVER			;Copy buffer start addr
@@ -2071,7 +2071,7 @@ B000F:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_QUERY:
-	define_word(`QUERY')
+	define_word(`query')
 C_QUERY:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_TIB			;Put TIB addr on stack
@@ -2122,7 +2122,7 @@ B0015:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_FILL:					;Fill with byte n bytes from addr
-	define_word(`FILL')
+	define_word(`fill')
 C_FILL:
 	.WORD	2+$			;Vector to code
 	LD	L,C			;Save BC for now
@@ -2145,7 +2145,7 @@ NO_COUNT:
 	JP	NEXT
 
 W_ERASE:				;Fill addr & length from stack with 0
-	define_word(`ERASE')
+	define_word(`erase')
 C_ERASE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -2153,7 +2153,7 @@ C_ERASE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_BLANKS:				;Fill addr & length from stack with [SP]
-	define_word(`BLANKS')
+	define_word(`blanks')
 C_BLANKS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BL			;Leaves ASCII for space on stack
@@ -2161,7 +2161,7 @@ C_BLANKS:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_HOLD:
-	define_word(`HOLD')
+	define_word(`hold')
 C_HOLD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -2174,7 +2174,7 @@ C_HOLD:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_PAD:
-	define_word(`PAD')
+	define_word(`pad')
 C_PAD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_HERE			;Dictionary pointer onto stack
@@ -2184,7 +2184,7 @@ C_PAD:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_WORD:
-	define_word(`WORD')
+	define_word(`word')
 C_WORD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BLK
@@ -2226,7 +2226,7 @@ B0017:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CONVERT:
-	define_word(`CONVERT')
+	define_word(`convert')
 C_CONVERT:
 	.WORD	E_COLON			;Interpret following word sequence
 B001A:
@@ -2266,7 +2266,7 @@ B0018:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_NUMBER:
-	define_word(`NUMBER')
+	define_word(`number')
 C_NUMBER:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -2313,7 +2313,7 @@ B001D:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_MFIND:
-	define_word(`-FIND')
+	define_word(`-find')
 C_MFIND:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BL			;Leaves ASCII for space on stack
@@ -2334,14 +2334,14 @@ B001E:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CABORT:
-	define_word(`<ABORT>')
+	define_word(`<abort>')
 C_CABORT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ABORT
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_ERROR:
-	define_word(`ERROR')
+	define_word(`error')
 C_ERROR:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_WARNING		;Put WARNING addr on stack
@@ -2373,7 +2373,7 @@ B0020:
 	.WORD	C_QUIT
 
 W_ID:					;Print definition name from name field addr
-	define_word(`ID.')
+	define_word(`id.')
 C_ID:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_COUNT			;Convert string at addr to addr + length
@@ -2426,7 +2426,7 @@ B0021:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CCOMPILE:
-	define_word(`[COMPILE]')
+	define_word(`[compile]')
 C_CCOMPILE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MFIND
@@ -2439,7 +2439,7 @@ C_CCOMPILE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LITERAL:
-	define_immediate_word(`LITERAL')
+	define_immediate_word(`literal')
 C_LITERAL:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_STATE			;Push STATE addr
@@ -2453,7 +2453,7 @@ B0022:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DLITERAL:
-	define_immediate_word(`DLITERAL')
+	define_immediate_word(`dliteral')
 C_DLITERAL:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_STATE			;Push STATE addr
@@ -2467,7 +2467,7 @@ B0023:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_QSTACK:
-	define_word(`?STACK')
+	define_word(`?stack')
 C_QSTACK:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_SPFETCH		;Stack pointer onto stack
@@ -2489,7 +2489,7 @@ C_QSTACK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_INTERPRET:
-	define_word(`INTERPRET')
+	define_word(`interpret')
 C_INTERPRET:
 	.WORD	E_COLON			;Interpret following word sequence
 B002A:
@@ -2533,7 +2533,7 @@ B0027:
 	.WORD	B002A-$			;FFC2h
 
 W_IMMEDIATE:
-	define_word(`IMMEDIATE')
+	define_word(`immediate')
 C_IMMEDIATE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LATEST		;Push top words NFA
@@ -2543,7 +2543,7 @@ C_IMMEDIATE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_VOCABULARY:
-	define_word(`VOCABULARY')
+	define_word(`vocabulary')
 C_VOCABULARY:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CREATE
@@ -2574,7 +2574,7 @@ C_LINK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_FORTH:
-	define_immediate_word(`FORTH')
+	define_immediate_word(`forth')
 C_FORTH:
 	.WORD	X_DOES
 	.WORD	C_LINK
@@ -2585,7 +2585,7 @@ E_FORTH:
 	.WORD	0000h
 
 W_DEFINITIONS:				;Set CURRENT as CONTEXT vocabulary
-	define_word(`DEFINITIONS')
+	define_word(`definitions')
 C_DEFINITIONS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CONTEXT		;Get CONTEXT addr
@@ -2612,7 +2612,7 @@ C_OPENBRKT:
 ;		outer loop. This NEVER quits.
 
 W_QUIT:
-	define_word(`QUIT')
+	define_word(`quit')
 C_QUIT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -2638,7 +2638,7 @@ S_END8:
 	.WORD	B002C-$			;FFE7h
 
 W_ABORT:
-	define_word(`ABORT')
+	define_word(`abort')
 C_ABORT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UABORT		;Put UABORT on stack
@@ -2662,7 +2662,7 @@ S_END1:
 	.WORD	C_QUIT
 
 W_WARM:
-	define_word(`WARM')
+	define_word(`warm')
 C_WARM:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -2670,7 +2670,7 @@ C_WARM:
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
 	.WORD	S0			;S0 addr
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
-	.WORD	START_TABLE-WORD1	;(000Ch) Table length
+	.WORD	START_TABLE-WORD1	;Table length
 	.WORD	C_CMOVE			;Move block
 	.WORD	C_ABORT
 
@@ -2680,9 +2680,9 @@ X_COLD:
 	LD	DE,FLAST		        ;Where the table's going
 	LD	BC,NEXTS2-START_TABLE	;Bytes to copy
 	LDIR				   ;
-	LD	HL,W_RESET		   ; Copy last word to ram -- need to update when creating a NEW WORD
+	LD	HL,W_TASK		   ; Copy last word to ram -- need to update when creating a NEW WORD
 	LD	DE,VOCAB_BASE	   ; Where it's going
-	LD	BC,W_RESET_END-W_RESET ;Bytes to copy
+	LD	BC,W_TASKEND-W_TASK ;Bytes to copy
 	LDIR				   ;
 	LD	BC,FIRSTWORD	   ;BC to first forth word
 	LD	HL,(WORD1)		;Get stack pointer
@@ -2693,7 +2693,7 @@ FIRSTWORD:
 	.WORD	C_COLD
 
 W_COLD:
-	define_word(`COLD')
+	define_word(`cold')
 	.WORD	X_COLD
 C_COLD:
 	.WORD	E_COLON			;Interpret following word sequence
@@ -2711,7 +2711,7 @@ C_COLD:
 	.WORD	C_ABORT
 
 W_SINGTODUB:				;Change single number to double
-	define_word(`S->D')
+	define_word(`s->d')
 C_SINGTODUB:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get number
@@ -2735,7 +2735,7 @@ B002D:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DPLUSMINUS:				;Add sign of n to double
-	define_word(`D+-')
+	define_word(`d+-')
 C_DPLUSMINUS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_0LESS			;Less than 0
@@ -2746,7 +2746,7 @@ B002E:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_ABS:
-	define_word(`ABS')
+	define_word(`abs')
 C_ABS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DUP			;Duplicate top value on stack
@@ -2754,7 +2754,7 @@ C_ABS:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DABS:
-	define_word(`DABS')
+	define_word(`dabs')
 C_DABS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DUP			;Duplicate top value on stack
@@ -2762,7 +2762,7 @@ C_DABS:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_MIN:
-	define_word(`MIN')
+	define_word(`min')
 C_MIN:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_2DUP			;Dup top 2 values on stack
@@ -2775,7 +2775,7 @@ B002F:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_MAX:
-	define_word(`MAX')
+	define_word(`max')
 C_MAX:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_2DUP			;Dup top 2 values on stack
@@ -2788,7 +2788,7 @@ B0030:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_MTIMES:
-	define_word(`M*')
+	define_word(`m*')
 C_MTIMES:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_2DUP			;Dup top 2 values on stack
@@ -2803,7 +2803,7 @@ C_MTIMES:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_MDIV:
-	define_word(`M/')
+	define_word(`m/')
 C_MDIV:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_OVER			;Copy 2nd down to top of stack
@@ -2832,7 +2832,7 @@ C_TIMES:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DIVMOD:
-	define_word(`/MOD')
+	define_word(`/mod')
 C_DIVMOD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MOVER			;Move value from data to return stack
@@ -2851,7 +2851,7 @@ C_DIV:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_MOD:
-	define_word(`MOD')
+	define_word(`mod')
 C_MOD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DIVMOD
@@ -2859,7 +2859,7 @@ C_MOD:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_TIMESDIVMOD:
-	define_word(`*/MOD')
+	define_word(`*/mod')
 C_TIMESDIVMOD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MOVER			;Move value from data to return stack
@@ -2878,7 +2878,7 @@ C_TIMESDIV:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_MDIVMOD:
-	define_word(`M/MOD')
+	define_word(`m/mod')
 C_MDIVMOD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MOVER			;Move value from data to return stack
@@ -2893,7 +2893,7 @@ C_MDIVMOD:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CLINE:
-	define_word(`<LINE>')
+	define_word(`<line>')
 C_CLINE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MOVER			;Move value from data to return stack
@@ -2910,7 +2910,7 @@ C_CLINE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DOTLINE:
-	define_word(`.LINE')
+	define_word(`.line')
 C_DOTLINE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CLINE
@@ -2919,7 +2919,7 @@ C_DOTLINE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_MESSAGE:
-	define_word(`MESSAGE')
+	define_word(`message')
 C_MESSAGE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_WARNING		;Put WARNING addr on stack
@@ -2952,7 +2952,7 @@ B0033:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_PORTIN:				;Fetch data from port
-	define_word(`P@')
+	define_word(`p@')
 C_PORTIN:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get port addr
@@ -2964,7 +2964,7 @@ C_PORTIN:
 	JP	NEXTS1			;Save & NEXT
 
 W_PORTOUT:				;Save data to port
-	define_word(`P!')
+	define_word(`p!')
 C_PORTOUT:
 	.WORD	2+$			;Vector to code
 	POP	DE			;Get port addr
@@ -2976,29 +2976,29 @@ C_PORTOUT:
 	JP	NEXT
 
 W_USE:
-	define_word(`USE')
+	define_word(`use')
 C_USE:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	USE-SYSTEM
 
 W_PREV:
-	define_word(`PREV')
+	define_word(`prev')
 C_PREV:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	PREV-SYSTEM
 
 W_PLUSBUF:
-	define_word(`+BUF')
+	define_word(`+buf')
 C_PLUSBUF:
 	.WORD	NEXT
 
 W_UPDATE:
-	define_word(`UPDATE')
+	define_word(`update')
 C_UPDATE:
 	.WORD	NEXT
 
 W_EBUFFERS:				;Clear pseudo disk buffer
-	define_word(`EMPTY-BUFFERS')
+	define_word(`empty-buffers')
 C_EBUFFERS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_FIRST			;Start of pseudo disk onto stack
@@ -3009,14 +3009,14 @@ C_EBUFFERS:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_BUFFER:
-	define_word(`BUFFER')
+	define_word(`buffer')
 C_BUFFER:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BLOCK
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_BLOCK:				;Put address of block n (+ offset) on stack
-	define_word(`BLOCK')
+	define_word(`block')
 C_BLOCK:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -3032,7 +3032,7 @@ C_BLOCK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_RW:
-	define_word(`R/W')
+	define_word(`r/w')
 C_RW:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_URW			;
@@ -3047,13 +3047,13 @@ CF_URW:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_FLUSH:
-	define_word(`FLUSH')
+	define_word(`flush')
 C_FLUSH:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DUMP:
-	define_word(`DUMP')
+	define_word(`dump')
 C_DUMP:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -3088,7 +3088,7 @@ B0050:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LOAD:
-	define_word(`LOAD')
+	define_word(`load')
 C_LOAD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BLK			;Get current block number (0 = keyboard)
@@ -3146,7 +3146,7 @@ C_TICK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_FORGET:
-	define_word(`FORGET')
+	define_word(`forget')
 C_FORGET:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CURRENT
@@ -3177,7 +3177,7 @@ C_FORGET:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_BACK:
-	define_word(`BACK')
+	define_word(`back')
 C_BACK:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_HERE			;Dictionary pointer onto stack
@@ -3186,7 +3186,7 @@ C_BACK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_BEGIN:
-	define_immediate_word(`BEGIN')
+	define_immediate_word(`begin')
 C_BEGIN:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_QCOMP			;Error if not in compile mode
@@ -3195,7 +3195,7 @@ C_BEGIN:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_ENDIF:
-	define_immediate_word(`ENDIF')
+	define_immediate_word(`endif')
 C_ENDIF:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_QCOMP			;Error if not in compile mode
@@ -3209,14 +3209,14 @@ C_ENDIF:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_THEN:
-	define_immediate_word(`THEN')
+	define_immediate_word(`then')
 C_THEN:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ENDIF
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DO:
-	define_immediate_word(`DO')
+	define_immediate_word(`do')
 C_DO:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_COMPILE		;Compile next word into dictionary
@@ -3226,7 +3226,7 @@ C_DO:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LOOP:
-	define_immediate_word(`LOOP')
+	define_immediate_word(`loop')
 C_LOOP:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_3
@@ -3237,7 +3237,7 @@ C_LOOP:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_PLUSLOOP:
-	define_immediate_word(`+LOOP')
+	define_immediate_word(`+loop')
 C_PLUSLOOP:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_3
@@ -3248,7 +3248,7 @@ C_PLUSLOOP:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_UNTIL:
-	define_immediate_word(`UNTIL')
+	define_immediate_word(`until')
 C_UNTIL:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_1			;Put 1 on stack
@@ -3259,14 +3259,14 @@ C_UNTIL:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_END:
-	define_immediate_word(`END')
+	define_immediate_word(`end')
 C_END:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_UNTIL
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_AGAIN:
-	define_immediate_word(`AGAIN')
+	define_immediate_word(`again')
 C_AGAIN:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_1			;Put 1 on stack
@@ -3277,7 +3277,7 @@ C_AGAIN:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_REPEAT:
-	define_immediate_word(`REPEAT')
+	define_immediate_word(`repeat')
 C_REPEAT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MOVER			;Move value from data to return stack
@@ -3291,7 +3291,7 @@ C_REPEAT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_IF:
-	define_immediate_word(`IF')
+	define_immediate_word(`if')
 C_IF:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_COMPILE		;Compile next word into dictionary
@@ -3303,7 +3303,7 @@ C_IF:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_ELSE:
-	define_immediate_word(`ELSE')
+	define_immediate_word(`else')
 C_ELSE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_2
@@ -3320,7 +3320,7 @@ C_ELSE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_WHILE:
-	define_immediate_word(`WHILE')
+	define_immediate_word(`while')
 C_WHILE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_IF
@@ -3328,7 +3328,7 @@ C_WHILE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_SPACES:
-	define_word(`SPACES')
+	define_word(`spaces')
 C_SPACES:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -3368,7 +3368,7 @@ C_SHARPGT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_SIGN:
-	define_word(`SIGN')
+	define_word(`sign')
 C_SIGN:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ROT			;3rd valu down to top of stack
@@ -3406,7 +3406,7 @@ B0037:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_SHARPS:
-	define_word(`#S')
+	define_word(`#s')
 C_SHARPS:
 	.WORD	E_COLON			;Interpret following word sequence
 B0038:
@@ -3420,7 +3420,7 @@ B0038:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DDOTR:
-	define_word(`D.R')
+	define_word(`d.r')
 C_DDOTR:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MOVER			;Move value from data to return stack
@@ -3439,7 +3439,7 @@ C_DDOTR:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DOTR:
-	define_word(`.R')
+	define_word(`.r')
 C_DOTR:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MOVER			;Move value from data to return stack
@@ -3449,7 +3449,7 @@ C_DOTR:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DDOT:
-	define_word(`D.')
+	define_word(`d.')
 C_DDOT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -3474,7 +3474,7 @@ C_QUESTION:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_UDOT:					;Output as unsigned value
-	define_word(`U.')
+	define_word(`u.')
 C_UDOT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
@@ -3482,7 +3482,7 @@ C_UDOT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_VLIST:
-	define_word(`VLIST')
+	define_word(`words')
 C_VLIST:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CONTEXT		;Leave vocab pointer on stack
@@ -3507,7 +3507,7 @@ B0039:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LIST:
-	define_word(`LIST')
+	define_word(`list')
 C_LIST:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BASE			;Put BASE addr on stack
@@ -3552,7 +3552,7 @@ NO_BRK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_INDEX:
-	define_word(`INDEX')
+	define_word(`index')
 C_INDEX:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_1PLUS			;1 plus
@@ -3579,7 +3579,7 @@ B003C:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_INT:
-	define_immediate_word(`;INT')
+	define_immediate_word(`;int')
 C_INT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_WHATSTACK		;Check stack pointer, error if not ok
@@ -3597,19 +3597,19 @@ X_INT:
 	JP	X_STOP
 
 W_INTFLAG:
-	define_word(`INTFLAG')
+	define_word(`intflag')
 C_INTFLAG:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	INTFLAG-SYSTEM
 
 W_INTVECT:
-	define_word(`INTVECT')
+	define_word(`intvect')
 C_INTVECT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	INTVECT-SYSTEM
 
 W_CPU:
-	define_word(`.CPU')
+	define_word(`.cpu')
 C_CPU:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CQUOTE		;Output following string
@@ -3620,7 +3620,7 @@ S_END4:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_2SWAP:
-	define_word(`2SWAP')
+	define_word(`2swap')
 C_2SWAP:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ROT			;3rd valu down to top of stack
@@ -3630,7 +3630,7 @@ C_2SWAP:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_2OVER:
-	define_word(`2OVER')
+	define_word(`2over')
 C_2OVER:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MOVER			;Move value from data to return stack
@@ -3642,12 +3642,12 @@ C_2OVER:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_EXIT:
-	define_word(`EXIT')
+	define_word(`exit')
 C_EXIT:
 	.WORD	X_STOP
 
 W_J:					;Push outer loop value on stack
-	define_word(`J')
+	define_word(`j')
 C_J:
 	.WORD	2+$			;Vector to code
 	LD	HL,(RPP)		;Get return stack pointer
@@ -3658,7 +3658,7 @@ C_J:
 	JP	X_I2
 
 W_ROLL:
-	define_word(`ROLL')
+	define_word(`roll')
 C_ROLL:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DUP			;Duplicate top value on stack
@@ -3693,7 +3693,7 @@ B003E:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DEPTH:
-	define_word(`DEPTH')
+	define_word(`depth')
 C_DEPTH:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_S0			;Push S0 (initial data stack pointer)
@@ -3706,7 +3706,7 @@ C_DEPTH:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DLESSTHAN:
-	define_word(`D<')
+	define_word(`d<')
 C_DLESSTHAN:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ROT			;3rd valu down to top of stack
@@ -3734,7 +3734,7 @@ C_0GREATER:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_DOTS:
-	define_word(`.S')
+	define_word(`.s')
 C_DOTS:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CR			;Output [CR][LF]
@@ -3766,7 +3766,7 @@ S_END5:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CODE:
-	define_word(`CODE')
+	define_word(`code')
 C_CODE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_QEXEC			;Error not if not in execute mode
@@ -3775,7 +3775,7 @@ C_CODE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_ENDCODE:
-	define_word(`END-CODE')
+	define_word(`end-code')
 C_ENDCODE:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_CURRENT
@@ -3788,7 +3788,7 @@ C_ENDCODE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_NEXT:
-	define_immediate_word(`NEXT')
+	define_immediate_word(`next')
 C_NEXT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -3800,7 +3800,7 @@ C_NEXT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LLOAD:
-	define_word(`LLOAD')
+	define_word(`lload')
 C_LLOAD:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_BLOCK			;Get block address
@@ -3845,17 +3845,27 @@ LL_CHAR:
 	.WORD	C_DROP			;Drop next address
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
+W_RESET:
+	define_word(`reset')
+	.WORD	2+$			;Vector to code
+aSystemReset:
+	LD   C,0x00         ;API 0x00
+	RST  0x30           ;  = System reset
+	JP   C_STOP
+
 W_TASK:
-	define_word(`TASK')
+	define_word(`task') ; empty word -- is this customary marker in the dictionary?
 C_TASK:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 W_TASKEND:
 
-W_EDITI: ; what is that?
+
+W_EDITI: ; what is that? looks like a start pointer for editor dictionary
+; currently it contains only one "clear" word... WIP?
 
 W_CLEAR:				;Clear block n
-	define_word(`CLEAR')
+	define_word(`clear')
 C_CLEAR:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DUP			;Duplicate number
@@ -3865,18 +3875,6 @@ C_CLEAR:
 	.WORD	C_BBUF			;Put number of bytes/block on stack
 	.WORD	C_ERASE			;Clear the block
 	.WORD	C_STOP			;Pop BC from return stack (=next)
-
-W_RESET:
-	.byte	85h				; 0x80 + length
-	.ascii	"RESE"
-	.byte	'T'+0x80
-	.word	W_CLEAR			; link to previous word
-	.WORD	2+$			;Vector to code
-aSystemReset:
-	LD   C,0x00         ;API 0x00
-	RST  0x30           ;  = System reset
-	JP   X_STOP			; is this needed?
-W_RESET_END:
 
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code
@@ -3943,15 +3941,17 @@ CHR_WR:					;Character out
 ;		.ORG	0FE00h	        ;Set up system variable addresses
 ;==============================================================================
 SYSTEM:					;Start of scratch pad area
-		.space	6		;User bytes
-S0:		.space	2		;Initial value of the data stack pointer
-R0:		.space	2		;Initial value of the return stack pointer
-TIB:		.space	2		;Address of the terminal input buffer
-WIDTH:		.space	2		;Number of letters saved in names
-WARNING:	.space	2		;Error message control number
-FENCE:		.space	2		;Dictionary FORGET protection point
-DP:		.space	2		;The dictionary pointer
-VOC_LINK:	.space	2		;Most recently created vocabulary
+		.space	6		;User bytes -- uninitialized
+; following 16 bytes are initialized by C_WARM
+S0:		.space	2		;Initial value of the data stack pointer (DATA_STACK)
+R0:		.space	2		;Initial value of the return stack pointer (SYSTEM)
+TIB:		.space	2		;Address of the terminal input buffer (DATA_STACK)
+WIDTH:		.space	2		;Number of letters saved in names (31)
+WARNING:	.space	2		;Error message control number (0)
+FENCE:		.space	2		;Dictionary FORGET protection point (VOCAB_BASE)
+DP:		.space	2		;The dictionary pointer (VOCAB_BASE+0Bh)
+VOC_LINK:	.space	2		;Most recently created vocabulary (E_FORTH)
+; these are not initialized (?)
 BLK:		.space	2		;Current block number under interpretation
 TOIN:		.space	2		;Offset in the current input text buffer
 OUT:		.space	2		;Offset in the current output text buffer
@@ -3967,8 +3967,9 @@ DPL:		.space	2		;Number of digits to the right of the
 					;decimal point on double integer input
 FLD:		.space	2		;Field width for formatted number output
 CSP:		.space	2		;Check stack pointer
-RHASH:		.space	2		;Location of editor cursor in a text bloxk
+RHASH:		.space	2		;Location of editor cursor in a text block
 HLD:		.space	2		;Address of current output
+; START_TABLE is copied here
 FLAST:		.space	6		;FORTH vocabulary data initialised to FORTH
 					;vocabulary
 ELAST:		.space	6		;Editor vocabulary data initialised to
