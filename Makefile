@@ -1,6 +1,7 @@
 ASSEMBLER = z80-unknown-coff-as
 LINKER = z80-unknown-coff-ld
 OBJCOPY = z80-unknown-coff-objcopy
+M4 = m4
 
 ASFLAGS = -a
 LDFLAGS =
@@ -23,8 +24,11 @@ rom.out: $(OBJ_FILES) $(LD_FILES)
 ram.out: $(OBJ_FILES) $(LD_FILES)
 	$(LINKER) $(LDFLAGS) -T ram.ld -Map=ram.map $(OBJ_FILES) -o $@
 
-%.out: %.asm
+%.s: %.asm macros.m4
+	$(M4) $< > $@
+
+%.out: %.s
 	$(ASSEMBLER) $(ASFLAGS) $< -o $@ > $<.lst
 
 clean:
-	rm -f *.hex *.out *.bin *.map *.lst
+	rm -f *.hex *.out *.bin *.map *.lst *.s
