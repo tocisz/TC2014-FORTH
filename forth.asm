@@ -54,7 +54,7 @@ DEF_SYSADDR:
 	.WORD	001Fh			;Word name length (default 31)
 	.WORD	0000h			;Error message control number
 	.WORD	VOCAB_BASE		;FORGET protection
-	.WORD	VOCAB_BASE+(W_TASKEND-W_TASK) ;Dictionary pointer -- this should match length of a last word????
+	.WORD	VOCAB_BASE+(W_TASKEND-W_TASK) ;Dictionary pointer -- this must be >= length of a last word
 	.WORD	E_FORTH			;Most recently created vocab.
 
 START_TABLE:
@@ -94,11 +94,11 @@ NEXTS1:
 	PUSH	HL
 NEXT:
 	LD	A,(INTFLAG)		;Interrupt flag
-	BIT	7,A			;Check for interrupt
+	BIT	7,A				;Check for interrupt
 	JR	Z,NOINT			;No interrupt
-	BIT	6,A			;Interrupt enabled ?
+	BIT	6,A				;Interrupt enabled ?
 	JR	NZ,NOINT		;No interrupt
-	LD	HL,(INTVECT)		;Get nterrupt vector
+	LD	HL,(INTVECT)	;Get interrupt vector
 	LD	A,40h			;Clear flag byte
 	LD	(INTFLAG),A		;Interrupt flag into HL
 	JR	NEXTADDR		;JP (HL)
@@ -129,7 +129,6 @@ C_LIT:
 	INC	BC			;
 	LD	H,A			;
 	JP	NEXTS1			;Save & NEXT
-
 
 W_EXECUTE:				;Jump to address on stack
 	define_word(`execute')
@@ -3970,31 +3969,69 @@ CSP:		.space	2		;Check stack pointer
 RHASH:		.space	2		;Location of editor cursor in a text block
 HLD:		.space	2		;Address of current output
 ; START_TABLE is copied here
+/*
+	.BYTE	81h,0A0h
+	.WORD	VOCAB_BASE
+	.BYTE	00h,00h			;FLAST
+*/
 FLAST:		.space	6		;FORTH vocabulary data initialised to FORTH
 					;vocabulary
+/*
+	.BYTE	81h,0A0h
+	.WORD	W_EDITI
+	.WORD	E_FORTH			;ELAST
+*/
 ELAST:		.space	6		;Editor vocabulary data initialised to
 					;EDITOR vocabulary
+;	.BYTE	00h			;CRFLAG
 CRFLAG:		.space	1		;Carriage return flag
-		.space	1		;User byte
+;	.BYTE	00h			;Free
+			.space	1		;User byte
+/*
+	IN	A,(00h)			;I/O Port input
+	RET				;routine
+*/
 PAT:		.space	3		;I/O port fetch routine (input)
+/*
+	OUT	(00h),A			;I/O Port output
+	RET				;routine
+*/
 PST:		.space	3		;I/O port store routine (output)
+;	.WORD	SYSTEM 			;Return stack pointer
 RPP:		.space	2		;Return stack pointer
+;	.WORD	MASS_STORE		;Mass storage buffer to use
 USE:		.space	2		;Mass storage buffer address to use
+;	.WORD	MASS_STORE		;Storage buffer just used
 PREV:		.space	2		;Mass storage buffer address just used
+;	.BYTE	00h				;Interrupt flag
 INTFLAG:	.space	1		;Interrupt flag
-		.space	1		;User byte
+;	.BYTE	00h			;Free
+			.space	1		;User byte
+;	.WORD	C_ABORT			;Interrupt vector
 INTVECT:	.space	2		;Interrupt vector
+;	.WORD	CF_UQTERMINAL		;C field address ?TERMINAL
 UTERMINAL:	.space	2		;Code field address of word ?TERMINAL
+;	.WORD	CF_UKEY			;C field address KEY
 UKEY:		.space	2		;Code field address of word KEY
+;	.WORD	CF_UEMIT		;C field address EMIT
 UEMIT:		.space	2		;Code field address of word EMIT
+;	.WORD	CF_UCR			;C field address CR
 UCR:		.space	2		;Code field address of word CR
+;	.WORD	CF_URW			;C field address R/W
 URW:		.space	2		;Code field address of word R/W
+;	.WORD	CF_UABORT		;C field address ABORT
 UABORT:		.space	2		;Code field address of word ABORT
+;	.WORD	0020h			;CHRs per input line
 UCL:		.space	2		;Number of characters per input line
+;	.WORD	DISK_START		;Pseudo disk buf start
 UFIRST:		.space	2		;Start of pseudo disk buffer
+;	.WORD	DISK_END		;Pseudo disk buf end
 ULIMIT:		.space	2		;End of pseudo disk buffer
+;	.WORD	BLOCK_SIZE		;Bytes per block
 UBBUF:		.space	2		;Number of bytes per block
+;	.WORD	BUFFERS			;Buffers per block
 UBSCR:		.space	2		;Number of buffers per block
+; not used...
 KEYBUF:		.space	2		;Double key buffer
 RAF:		.space	2		;Register AF
 RBC:		.space	2		;Register BC
