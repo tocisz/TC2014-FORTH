@@ -16,7 +16,7 @@ rom.bin: rom.out
 	$(OBJCOPY) -O binary -j.rom $< $@
 
 ram.hex: ram.out
-	$(OBJCOPY) -O ihex -j.ram $< $@
+	$(OBJCOPY) --set-start=0 -O ihex -j.ram $< $@
 
 rom.out: $(OBJ_FILES) $(LD_FILES)
 	$(LINKER) $(LDFLAGS) -T rom.ld -Map=rom.map $(OBJ_FILES) -o $@
