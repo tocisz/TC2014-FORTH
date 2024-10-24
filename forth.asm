@@ -1472,6 +1472,7 @@ W_2MINUS:				;2 minus
 	define_word(`2-')
 C_2MINUS:
 	.WORD	2+$			;Vector to code
+X_2MINUS:
 	POP	HL			; get n
 	DEC	HL			; subtract 1
 	DEC	HL			; subtract 2
@@ -1666,11 +1667,7 @@ C_LFA:
 W_CFA:
 	define_word(`cfa')
 C_CFA:
-	.WORD	2+$			;Vector to code
-	POP	HL			    ; get n
-	DEC	HL			    ; subtract 1
-	DEC	HL			    ; subtract 2
-	JP	NEXTS1			; save result & NEXT
+	.WORD	X_2MINUS
 
 W_NFA:
 	define_word(`nfa')
@@ -1791,7 +1788,7 @@ C_COMPILE:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_LEFTBRKT:				;Set STATE to execute
-	define_word(`[')
+	define_immediate_word(`[')
 C_LEFTBRKT:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_ZERO			;Put zero on stack
