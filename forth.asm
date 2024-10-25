@@ -1713,8 +1713,12 @@ W_PFA:					    ;Convert NFA to PFA
 	define_word(`pfa')
 C_PFA:
 	.WORD	E_COLON			;Interpret following word sequence
-	.WORD	C_1			    ;Traverse up memory
-	.WORD	C_TRAVERSE		;End of name on stack
+	.WORD	C_DUP			;Duplicate address
+	.WORD	C_CFETCH		;Fetch one byte
+	.WORD	C_LIT
+	.WORD	31
+	.WORD	C_AND			;Bitwise AND
+	.WORD	C_PLUS			;Increase address by result
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
 	.WORD	0005h			;Offset to start of word code
 	.WORD	C_PLUS			;n1 + n2
@@ -2436,8 +2440,8 @@ B0021:
 	.WORD	00A0h
 	.WORD	C_TOGGLE		;XOR (addr) with byte
 	.WORD	C_HERE			;Dictionary pointer onto stack
-	.WORD	C_1			;Put 1 on stack
-	.WORD	C_MINUS
+	.WORD	C_1				;Put 1 on stack
+	.WORD	C_MINUS			; (why not C_1MINUS ?)
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
 	.WORD	0080h
 	.WORD	C_TOGGLE		;XOR (addr) with byte
