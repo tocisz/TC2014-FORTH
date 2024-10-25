@@ -4,6 +4,8 @@
 ' 0 cfa @ constant constword
 ' ;s cfa constant stopword
 ' <."> cfa constant stringword
+' compile cfa constant compileword
+
 ( TODO: compile above into ?words )
 
 variable wordranges
@@ -75,13 +77,17 @@ litwords ! ( size in var )
   ?sf drop
 ;
 
+variable lastcompile
+variable isimmediate
+
 ( print word definition )
 ( TODO: ending should depend on reason for termination )
-( TODO: detect immediate )
-( TODO: after compile ?litword makes no difference )
 : see ( WORD - )
   ' ( pfa )
-  dup cr ." : " nfa id.
+  lastcompile 0 !
+  dup cr ." : " nfa ( pfa nfa )
+  dup id.
+  c@ 64 and isimmediate ! ( pfa )
   dup cfa ?forthword if
     ( word defined by forth )
     100 ( a n )
@@ -89,22 +95,29 @@ litwords ! ( size in var )
       2dup ?seeIt while
       over ( a n a )
       @ 2+ nfa id. ( a n )
-      over ?litword if
+      over ?litword lastcompile @ not and if
         1- swap 2+ ( n-1 a' )
         dup @ .
         swap ( a' n-1 )
       then ( a n )
-      over ?stringword if
+      over ?stringword lastcompile @ not and if
         1- swap 2+ ( n-1 a' )
         count 2dup ( n-1 a'' c a'' c )
         type + 2- ( n-1 a''' )
         swap ( a''' n-1 )
         34 emit space
       then
+      over @ compileword = if
+        1 lastcompile !
+      else
+        0 lastcompile !
+      then
       1- swap 2+ swap ( a' n-1 )
     repeat drop
   else
    ( word defined by asm )
    ." NATIVE"
-  then drop ." ;" cr
+  then drop ." ; "
+  isimmediate @ if ." immediate" then
+  cr
 ;
