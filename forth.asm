@@ -88,6 +88,13 @@ START_TABLE:
 	.WORD	BLOCK_SIZE		;Bytes per block
 	.WORD	BUFFERS			;Buffers per block
 
+; assuming:
+;      BC -> i
+;   (RPP) -> r
+;      DE -> p
+;
+; p = *i + 1/2 -- half way between CFA and PFA
+; goto(**(i++))
 NEXTS2:
 	PUSH	DE
 NEXTS1:
@@ -629,6 +636,13 @@ C_RPSTORE:
 	LD	(RPP),HL		;Set return SP
 	JP	NEXT
 
+; assuming:
+;      BC -> i
+;   (RPP) -> r
+;      DE -> p
+;
+; i = *(r++) -- pop i from the return stack
+; goto(NEXT)
 W_STOP:					;Pop BC from return stack (=next)
 	define_word(`;s')
 C_STOP:
@@ -964,6 +978,20 @@ C_COLON:
 	.WORD	C_RIGHTBRKT		;Set STATE to compile
 	.WORD	C_CCODE			;Execute following machine code
 
+; this is the most important part of Forth
+; this function starts interpretation of a standard Forth threaded word
+; (RPP) - top of the return stack (grows down)
+; SP - top of the stack (grows up)
+; BC - word pointer
+;
+; assuming:
+;      BC -> i
+;   (RPP) -> r
+;      DE -> p
+;
+; *(--r) = i -- push i to the return stack
+; i = p + 1/2 -- PFA(0)
+; goto(NEXT)
 E_COLON:
 	LD	HL,(RPP)		;Get return stack pointer
 	DEC	HL			;Put BC on return stack
@@ -2380,6 +2408,8 @@ C_ID:
 	.WORD	C_SPACE			;Output space
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
+W_XXX1:
+	define_word(`xxx')
 C_XXX1:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MFIND			;Find name returns PFA,length,true or false
