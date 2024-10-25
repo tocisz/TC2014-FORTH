@@ -41,14 +41,14 @@ litwords ! ( size in var )
 : ?stringword @ stringword = ;
 
 : words2 context @ @ cr ( context gives NFA )
-    begin dup id.
-       pfa 2- ( cfa )
-       dup ?forthword .
-       dup ?asmword .
-       dup ?constword .
-       dup ?userword . cr
-       2+ lfa @ ( go to previous word )
-    dup 0= until
+  begin dup id.
+    pfa 2- ( cfa )
+    dup ?forthword .
+    dup ?asmword .
+    dup ?constword .
+    dup ?userword . cr
+    2+ lfa @ ( go to previous word )
+  dup 0= until
 ;
 
 : ?exit if r> drop exit then ;
@@ -83,26 +83,26 @@ litwords ! ( size in var )
   ' ( pfa )
   dup cr ." : " nfa id.
   dup cfa ?forthword if
-   ( word defined by forth )
-   100 ( a n )
-   begin
-     2dup ?seeIt while
-     over ( a n a )
-     @ 2+ nfa id. ( a n )
-     over ?litword if
-       1- swap 2+ ( n-1 a' )
-       dup @ .
-       swap ( a' n-1 )
-     then ( a n )
-     over ?stringword if
-       1- swap 2+ ( n-1 a' )
-       count 2dup ( n-1 a'' c a'' c )
-       type + 2- ( n-1 a''' )
-       swap ( a''' n-1 )
-       34 emit space
-     then
-     1- swap 2+ swap ( a' n-1 )
-   repeat drop
+    ( word defined by forth )
+    100 ( a n )
+    begin
+      2dup ?seeIt while
+      over ( a n a )
+      @ 2+ nfa id. ( a n )
+      over ?litword if
+        1- swap 2+ ( n-1 a' )
+        dup @ .
+        swap ( a' n-1 )
+      then ( a n )
+      over ?stringword if
+        1- swap 2+ ( n-1 a' )
+        count 2dup ( n-1 a'' c a'' c )
+        type + 2- ( n-1 a''' )
+        swap ( a''' n-1 )
+        34 emit space
+      then
+      1- swap 2+ swap ( a' n-1 )
+    repeat drop
   else
    ( word defined by asm )
    ." NATIVE"
