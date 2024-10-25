@@ -25,7 +25,7 @@ litwords ! ( size in var )
 ( will literal follow the word under address? )
 : ?litword ( a - F )
   @ litwords @ 0 do
-    dup i 1+ 2 * litwords + @ = ( a F )
+    dup i 1+ dup + litwords + @ = ( a F )
     if 0 leave then
   loop ( a | a 0)
   0= if
@@ -92,7 +92,7 @@ variable isimmediate
     ( word defined by forth )
     100 ( a n )
     begin
-      2dup ?seeIt while
+      2dup ?seeIt lastcompile @ or while
       over ( a n a )
       @ 2+ nfa id. ( a n )
       over ?litword lastcompile @ not and if
