@@ -42,11 +42,32 @@
   swap drop ( a+... )
 ; 
 : latest current @ @ ;
-: lfa lit 4 - ; ( pfa -> lfa )
+: lfa 4 - ; ( pfa -> lfa )
 : cfa 2- ; ( pfa -> cfa )
 : nfa 5 - -1 traverse ; ( pfa -> nfa )
 : pfa 1 traverse 5 + ; ( nfa -> pfa )
 : pfa dup c@ 31 and + 5 + ;
+
+: !csp sp@ csp ! ;
+: ?error swap if error else drop then ;
+: ?comp state @ 0= 17 ?error ;
+: ?exec state @ 18 ?error ; 
+: ?pairs - 19 ?error ;
+: ?csp sp@ csp @ - 20 ?error ;
+: ?loading blk @ 0= 22 ?error ; 
+
+: compile ?comp r> dup 2+ >r @ , ;
+: [ 0 state ! ; immediate
+: ] 192 state ! ; 
+: smudge latest 32 toggle ; 
+
+: hex 16 base ! ;
+: decimal 10 base ! ; 
+
+: <;code> r> latest pfa cfa ! ; ( Execute following machine code )
+: ;code ?csp compile <;code> [ ; immediate
+: create 0 constant ; 
+: does> r> latest pfa ! <;code> ...
 
 : -find
   bl word
@@ -58,12 +79,12 @@
   then
 ;
 
-: xxx ( )
+: xxx ( ? )
   -find if drop nfa id. 4 message space then 
   here ( nfa )
   dup c@ width @ min 1+ allot ( [allocate min[*dp, width]+1] nfa )
-  dup lit 160 toggle ( [toggle 160] nfa )
-  here 1 - lit 128 toggle ( [toggle 128 at the end] nfa )
+  dup 160 toggle ( [toggle 160] nfa )
+  here 1 - 128 toggle ( [toggle 128 at the end] nfa )
   latest , ( [store pointer to previous word] nfa )
   current @ ! ( [store nfa] )
   here 2+ , ( cfa <- next address )

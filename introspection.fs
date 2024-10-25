@@ -51,6 +51,7 @@ litwords ! ( size in var )
     dup ?userword . cr
     2+ lfa @ ( go to previous word )
   dup 0= until
+  drop
 ;
 
 : ?exit if r> drop exit then ;
