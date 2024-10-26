@@ -5,6 +5,7 @@
 ' ;s cfa constant stopword
 ' <."> cfa constant stringword
 ' compile cfa constant compileword
+' <;code> cfa constant ccodeword
 
 ( TODO: compile above into ?words )
 
@@ -57,20 +58,26 @@ litwords ! ( size in var )
 : ?exit if r> drop exit then ;
 
 ( conditions to continue introspection loop )
-( TODO: return reason of termination )
 : ?sf ( a n - F x )
   swap @ swap ( w n )
   0 rot rot ( 1 w n )
   0= ( 1 w F )
+  dup if ." ..." then
   ?exit ( exit if F != 0 )
   dup stopword = ( 1 w F )
+  dup if ." ; " then
+  ?exit
+  dup ccodeword = ( 1 w F )
+  dup if ." ;<code> ..." then
   ?exit
   dup wordranges @ < ( 1 w F )
+  dup if ." OOR1" then
   ?exit
   dup wordranges 2+ @ > ( 1 w F )
   swap ( 1 F1 w )
   wordranges 4 + @ < ( 1 F1 F2 )
   and dup ( 1 F F )
+  dup if ." OOR2" then
   ?exit
   2drop 1 0 ( 1 0 )
 ;
@@ -118,7 +125,7 @@ variable isimmediate
   else
    ( word defined by asm )
    ." NATIVE"
-  then drop ." ; "
-  isimmediate @ if ." immediate" then
+  then drop
+  isimmediate @ if ."  immediate" then
   cr
 ;
