@@ -4,26 +4,17 @@ variable wordranges
 ' reset cfa , ( from lit to reset in ROM )
 ' task cfa ,
 
-variable litwords
-0
-' lit cfa , 1+
-' branch cfa , 1+
-' 0branch cfa , 1+
-' <loop> cfa , 1+
-' <+loop> cfa , 1+
-litwords ! ( size in var )
+: ?exit if r> drop exit then ;
 
 ( will literal follow the word under address? )
-: ?litword ( a - F )
-  @ litwords @ 0 do
-    dup i 1+ dup + litwords + @ = ( a F )
-    if 0 leave then
-  loop ( a | a 0)
-  0= if
-    drop 1
-  else
-    0
-  then
+: ?litword ( a - cfa/0 )
+  @
+  dup [ ' lit cfa ] literal = ?exit
+  dup [ ' branch cfa ] literal = ?exit
+  dup [ ' 0branch cfa ] literal = ?exit
+  dup [ ' <loop> cfa ] literal = ?exit
+  [ ' <+loop> cfa ] literal = ?exit
+  0
 ;
 
 ( checks below expect cfa )
@@ -47,8 +38,6 @@ litwords ! ( size in var )
   dup 0= until
   drop
 ;
-
-: ?exit if r> drop exit then ;
 
 ( conditions to continue introspection loop )
 : ?sf ( a n - F x )
@@ -90,12 +79,12 @@ variable isimmediate
   c@ 64 and isimmediate ! ( pfa )
   dup cfa ?forthword if
     ( word defined by forth )
-    100 ( a n )
+    200 ( a n )
     begin
       2dup ?seeIt lastcompile @ or while
       over ( a n a )
       @ 2+ nfa id. ( a n )
-      over ?litword lastcompile @ not and if
+      over ?litword 0= not lastcompile @ not and if
         1- swap 2+ ( n-1 a' )
         dup @ .
         swap ( a' n-1 )
