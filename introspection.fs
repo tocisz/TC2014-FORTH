@@ -23,9 +23,6 @@ variable wordranges
 : ?userword @ [ ' s0 cfa @ ] literal = ;
 : ?constword @ [ ' 0 cfa @ ] literal = ;
 : ?stringword @ [ ' <."> cfa ] literal = ;
-' ;s cfa constant stopword
-' compile cfa constant compileword
-' <;code> cfa constant ccodeword
 
 : words2 context @ @ cr ( context gives NFA )
   begin dup id.
@@ -46,10 +43,10 @@ variable wordranges
   0= ( 1 w F )
   dup if ." ..." then
   ?exit ( exit if F != 0 )
-  dup stopword = ( 1 w F )
-  dup if ." ; " then
+  dup [ ' ;s cfa ] literal = ( 1 w F )
+  dup if ." ;" then
   ?exit
-  dup ccodeword = ( 1 w F )
+  dup [ ' <;code> cfa ] literal = ( 1 w F )
   dup if ." ;<code> ..." then
   ?exit
   dup wordranges @ < ( 1 w F )
@@ -96,7 +93,7 @@ variable isimmediate
         swap ( a''' n-1 )
         34 emit space
       then
-      over @ compileword = if
+      over @ [ ' compile cfa ] literal = if
         1 lastcompile !
       else
         0 lastcompile !
