@@ -27,11 +27,11 @@ litwords ! ( size in var )
 ;
 
 ( checks below expect cfa )
-: ?forthword @ lit [ ' emit cfa @ , ] = ;
+: ?forthword @ [ ' emit cfa @ ] literal = ;
 : ?asmword dup 2+ swap @ = ;
-: ?userword @ lit [ ' s0 cfa @ , ] = ;
-: ?constword @ lit [ ' 0 cfa @ , ] = ;
-: ?stringword @ lit [ ' <."> cfa , ] = ;
+: ?userword @ [ ' s0 cfa @ ] literal = ;
+: ?constword @ [ ' 0 cfa @ ] literal = ;
+: ?stringword @ [ ' <."> cfa ] literal = ;
 ' ;s cfa constant stopword
 ' compile cfa constant compileword
 ' <;code> cfa constant ccodeword
