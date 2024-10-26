@@ -68,8 +68,7 @@ variable lastcompile
 variable isimmediate
 
 ( print word definition )
-: see ( WORD - )
-  ' ( pfa )
+: <see> ( pfa - )
   lastcompile 0 !
   dup cr ." : " nfa ( pfa nfa )
   dup id.
@@ -107,3 +106,5 @@ variable isimmediate
   isimmediate @ if ."  immediate" then
   cr
 ;
+
+: see ' <see> ;
