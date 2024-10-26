@@ -196,7 +196,7 @@
   here 2+ , ( cfa <- next address )
 ;
 
-: [compile] -find 0= 0 ?error drop cfa , ; ( XXX shouldn't it be immediate? )
+: [compile] -find 0= 0 ?error drop cfa , ; ( to compile next word when interpreting )
 
 : literal ( n - )
     state @ if ( check that it's compiling )
@@ -477,7 +477,7 @@
     lit 0
     begin
         dup if
-            dup lit 13 = if
+            dup 13 = if ( CR )
                 drop c/l + c/l negate and
             else
                 over !
@@ -487,7 +487,7 @@
             drop
         then
         key
-        dup lit 26 =
+        dup 26 = ( SUB )
     until
     drop drop
 ;
