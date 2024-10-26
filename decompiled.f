@@ -126,6 +126,58 @@
   >in +! over - >r r@ here c! + here 1+ r>
   cmove here
 ;
+
+: expect ( a n - )
+    over + over ( a a+n a )
+    do ( a )
+        key ( a k )
+        dup lit BACKSPACE @ =
+        if ( a k )
+            drop ( a )
+            dup i = ( a begin? )
+            dup r> ( a begin? begin? i )
+            2 - + ( a begin? i-2/i-1 )
+            >r ( [push updated i] a begin? )
+            if
+                7 ( BEL )
+            else
+                8 ( BS )
+            then
+        else ( a k )
+            dup lit 13 = if ( CR )
+                leave
+                drop bl 0 ( a ' ' 0 )
+            else
+                dup ( a k k )
+            then
+            i c! ( store key )
+            0 i 1+ ! ( ensure 0 follows )
+        then
+        emit
+    loop
+    drop
+;
+
+: query
+    tib @
+    80 expect
+    0 >in ! ( append null )
+;
+
+( null word )
+: \0
+    blk @
+    if
+        1 blk +!
+        0 >in !
+        blk @
+        b/scr 1 - and 0=
+        if ?exec r> drop then
+    else
+        r> drop
+    then
+; immediate
+
 : blanks bl fill ;
 
 ( converts one digit of number string )
@@ -196,7 +248,8 @@
   here 2+ , ( cfa <- next address )
 ;
 
-: [compile] -find 0= 0 ?error drop cfa , ; ( to compile next word when interpreting )
+( to compile next word when interpreting )
+: [compile] -find 0= 0 ?error drop cfa , ;
 
 : literal ( n - )
     state @ if ( check that it's compiling )
@@ -267,7 +320,7 @@
         cr
         query
         interpret
-        state @ 0= if
+        state @ 0= if ( executing )
             <."> OK"
         then
     again
@@ -336,9 +389,19 @@
 : load blk @ >r >in @ >r 0 >in ! b/scr * blk ! interpret r> >in ! r> blk ! ;
 : --> ?loading 0 >in ! b/scr blk @ over mod - blk +! ;  immediate
 
-: ' -find 0= 0 ?error drop literal ; ( literal, so it can be used when compiling, even though not immediate... )
+( literal, so it can be used when compiling, even though not immediate... )
+: ' -find 0= 0 ?error drop literal ;
 
-: forget current @ context @ - lit 18 ?error ' dup fence @ < lit 15 ?error dup nfa dp ! lfa @ context @ ! ;
+: forget
+    current @
+    context @
+    - 18 ?error ( err if current != context )
+    '
+    dup fence @ < 15 ?error ( err if < fence )
+    dup nfa dp ! ( write nfa to dp )
+    lfa @
+    context @ ! ( write previous word to context )
+;
 
 : back here - , ;
 : begin ?comp here 1 ; immediate
