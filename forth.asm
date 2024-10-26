@@ -58,10 +58,10 @@ DEF_SYSADDR:
 	.WORD	E_FORTH			;Most recently created vocab.
 
 START_TABLE:
-	.BYTE	81h,0A0h
+	.WORD	0A081h
 	.WORD	VOCAB_BASE
-	.BYTE	00h,00h			;FLAST
-	.BYTE	81h,0A0h
+	.WORD	0000h			;FLAST
+	.WORD	0A081h
 	.WORD	W_EDITI
 	.WORD	E_FORTH			;ELAST
 	.BYTE	00h			;CRFLAG
@@ -2445,6 +2445,8 @@ B0021:
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
 	.WORD	0080h
 	.WORD	C_TOGGLE		;XOR (addr) with byte
+;	.WORD	C_DUP			; Adding anything here makes Forth crash
+;	.WORD	C_DROP			; Why?
 	.WORD	C_LATEST		;Push top words NFA
 	.WORD	C_COMMA			;Reserve 2 bytes and save n
 	.WORD	C_CURRENT
@@ -2609,7 +2611,7 @@ C_FORTH:
 	.WORD	X_DOES
 	.WORD	C_LINK
 
-	.BYTE	81h,' '+80h		; XXX $20 or $A0 ?
+	.WORD	0A081h
 	.WORD	FLAST+2
 E_FORTH:
 	.WORD	0000h
