@@ -1,14 +1,4 @@
 ( introspection )
-' emit cfa @ constant forthword
-' s0 cfa @ constant userword
-' 0 cfa @ constant constword
-' ;s cfa constant stopword
-' <."> cfa constant stringword
-' compile cfa constant compileword
-' <;code> cfa constant ccodeword
-
-( TODO: compile above into ?words )
-
 variable wordranges
 ' lit cfa wordranges !
 ' reset cfa , ( from lit to reset in ROM )
@@ -37,11 +27,14 @@ litwords ! ( size in var )
 ;
 
 ( checks below expect cfa )
-: ?forthword @ forthword = ;
+: ?forthword @ lit [ ' emit cfa @ , ] = ;
 : ?asmword dup 2+ swap @ = ;
-: ?userword @ userword = ;
-: ?constword @ constword = ;
-: ?stringword @ stringword = ;
+: ?userword @ lit [ ' s0 cfa @ , ] = ;
+: ?constword @ lit [ ' 0 cfa @ , ] = ;
+: ?stringword @ lit [ ' <."> cfa , ] = ;
+' ;s cfa constant stopword
+' compile cfa constant compileword
+' <;code> cfa constant ccodeword
 
 : words2 context @ @ cr ( context gives NFA )
   begin dup id.
@@ -89,7 +82,6 @@ variable lastcompile
 variable isimmediate
 
 ( print word definition )
-( TODO: ending should depend on reason for termination )
 : see ( WORD - )
   ' ( pfa )
   lastcompile 0 !
