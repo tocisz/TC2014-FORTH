@@ -3901,12 +3901,13 @@ C_CLEAR:
 	.WORD	C_ERASE			;Clear the block
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
-.align 2 ; no idea why but it breaks when not aligned
-	nop  ; to odd number
-
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code
+	PUSH	BC			;Save regs
+	PUSH	DE			;
 	CALL	CHR_RD			;User key in routine
+	POP	DE			;Restore regs
+	POP	BC			;
 	LD	L,A			;Put key on stack
 	LD	H,00h			;
 	JP	NEXTS1			;Save & NEXT
