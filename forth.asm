@@ -120,7 +120,7 @@ NEXTADDR:
 	LD	E,(HL)			;effectively LD HL,(HL)
 	INC	HL			;
 	LD	D,(HL) 			;
-	EX	DE,HL 			;
+	EX	DE,HL 			; ADJUST_HERE
 	JP	(HL) 			;Jump to it
 
 .set last_word_address, 0000h ;First word in vocabulary
@@ -1043,7 +1043,9 @@ C_VARIABLE:
 	.WORD	C_CCODE			;Execute following machine code
 
 X_VARIABLE:
-	INC	DE
+	INC	DE		; Interesting that every entrypoint need to adjust it
+				; Couldn't it be adjusted there ADJUST_HERE ?
+				; Well, most of asm coded words just ignore it... 
 	PUSH	DE
 	JP	NEXT
 
@@ -1968,8 +1970,7 @@ B0009:
 	.WORD	C_OVER			;Copy 2nd down to top of stack
 	.WORD	C_OVER			;Copy 2nd down to top of stack
 	.WORD	C_PLUS			;n1 + n2
-	.WORD	C_1			;Put 1 on stack
-	.WORD	C_MINUS
+	.WORD	C_1MINUS		;Decrement
 	.WORD	C_CFETCH		;Get byte from addr on stack
 	.WORD	C_BL			;Leaves ASCII for space on stack
 	.WORD	C_MINUS
@@ -1979,8 +1980,7 @@ B0009:
 	.WORD	C_BRANCH		;Add following offset to BC
 	.WORD	B0008-$			;0006h
 B0007:
-	.WORD	C_1			;Put 1 on stack
-	.WORD	C_MINUS
+	.WORD	C_1MINUS		;Decrement
 B0008:
 	.WORD	C_LLOOP			;Increment loop & branch if not done
 	.WORD	B0009-$			;FFE0h
@@ -2131,8 +2131,7 @@ C_NULL:
 	.WORD	C_BLK
 	.WORD	C_FETCH			;Get word from addr on stack
 	.WORD	C_BSCR			;Number of buffers per block on stack
-	.WORD	C_1			;Put 1 on stack
-	.WORD	C_MINUS
+	.WORD	C_1MINUS		;Decrement
 	.WORD	C_AND			;AND
 	.WORD	C_0EQUALS		;=0
 	.WORD	C_0BRANCH		;Add offset to BC if stack top = 0
@@ -2439,14 +2438,15 @@ B0021:
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
 	.WORD	00A0h
 	.WORD	C_TOGGLE		;XOR (addr) with byte
+
+; This shouldn't be needed. What's the reason to toggle it?
+; But when I removed it, it hands on :
 	.WORD	C_HERE			;Dictionary pointer onto stack
-	.WORD	C_1				;Put 1 on stack
-	.WORD	C_MINUS			; (why not C_1MINUS ?)
+	.WORD	C_1MINUS		;Decrement by 1
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
 	.WORD	0080h
 	.WORD	C_TOGGLE		;XOR (addr) with byte
-;	.WORD	C_DUP			; Adding anything here makes Forth crash
-;	.WORD	C_DROP			; Why?
+
 	.WORD	C_LATEST		;Push top words NFA
 	.WORD	C_COMMA			;Reserve 2 bytes and save n
 	.WORD	C_CURRENT
@@ -3877,13 +3877,6 @@ LL_CHAR:
 	.WORD	C_DROP			;Drop next address
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
-W_RESET:
-	define_word(`reset')
-	.WORD	2+$			;Vector to code
-aSystemReset:
-	LD   C,0x00         ;API 0x00
-	RST  0x30           ;  = System reset
-	JP   C_STOP
 
 W_TASK:
 	define_word(`task') ; empty word -- is this customary marker in the dictionary?
@@ -3907,6 +3900,9 @@ C_CLEAR:
 	.WORD	C_BBUF			;Put number of bytes/block on stack
 	.WORD	C_ERASE			;Clear the block
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+
+.align 2 ; no idea why but it breaks when not aligned
+	nop  ; to odd number
 
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code

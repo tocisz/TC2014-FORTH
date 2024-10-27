@@ -64,8 +64,13 @@
 : hex 16 base ! ;
 : decimal 10 base ! ; 
 
-: <;code> r> latest pfa cfa ! ; ( Execute following machine code )
-: ;code ?csp compile <;code> [ ; immediate
+( Q: why it is used to execute following machinge code? )
+(    I guess r> drop would be enough... )
+(    It's OK, only explanation is bad. )
+(    It executes following code not, but sets it as )
+(    a code word of a word being defined. )
+: <;code> r> latest pfa cfa ! ;
+: ;code ?csp compile <;code> [ ; immediate ( no smudge? as in the book )
 : create 0 constant ; 
 : does> r> latest pfa ! <;code> ...
 : count dup 1+ swap c@ ;
@@ -85,10 +90,10 @@
     dup 0 ( a len len 0 )
     do ( a len )
         over over ( a len a len )
-        + 1 - ( a len a+len-1 )
+        + 1- ( a len a+len-1 )
         c@ bl - ( a *[a+len-i]-bl )
         if leave
-        else 1 - ( a len-1 )
+        else 1- ( a len-1 )
         then
     loop
 ;
@@ -171,7 +176,7 @@
         1 blk +!
         0 >in !
         blk @
-        b/scr 1 - and 0=
+        b/scr 1- and 0=
         if ?exec r> drop then
     else
         r> drop
@@ -237,12 +242,13 @@
 
 : id. count lit 31 and type space ;
 
+( used by: code, :, constant )
 : xxx ( ? )
   -find if drop nfa id. 4 message space then 
   here ( nfa )
   dup c@ width @ min 1+ allot ( [allocate min[*dp, width]+1] nfa )
-  dup 160 toggle ( [toggle 160] nfa )
-  here 1 - 128 toggle ( [toggle 128 at the end] nfa )
+  dup 160 toggle ( [toggle 160=128+32[smudge]] nfa )
+  here 1- 128 toggle ( [toggle 128 at the end] nfa )
   latest , ( [store pointer to previous word] nfa )
   current @ ! ( [store nfa] )
   here 2+ , ( cfa <- next address )
@@ -310,7 +316,7 @@
 : (
     lit 41 ( close bracket )
     word drop
-;  immediate
+; immediate
 
 : quit
     0 blk !
