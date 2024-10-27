@@ -295,7 +295,7 @@ MATCH_NO_END:
 	INC	DE			;
 	LD	A,(DE)			;
 	XOR	(HL)			;
-	ADD	A,A			;Move bit 7 to C flag
+	ADD	A,A			;Move bit 7 to C flag -- ah, here it's used
 	JR	NZ,NO_MATCH		;No match jump
 	JR	NC,MATCH_NO_END		;Match & not last, so next chr
 	LD	HL,0005			;Offset to start of code
@@ -315,7 +315,7 @@ NO_MATCH:
 NOT_END_CHR:
 	INC	DE			;Next chr of this vocab word
 	LD	A,(DE)			;Get it
-	OR	A			;Set flags
+	OR	A			;Set flags -- and here too
 	JP	P,NOT_END_CHR		;Loop if not end chr
 END_CHR:
 	INC	DE			;Now points to next word vector
