@@ -1,7 +1,7 @@
 ( introspection )
 variable wordranges
 ' lit cfa wordranges !
-' reset cfa , ( from lit to reset in ROM )
+' lload cfa , ( from lit to lload in ROM )
 ' task cfa ,
 
 : ?exit if r> drop exit then ;
