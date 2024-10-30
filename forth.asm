@@ -100,6 +100,7 @@ NEXTS2:
 NEXTS1:
 	PUSH	HL
 NEXT:
+.ifdef INTERRUPTS
 	LD	A,(INTFLAG)		;Interrupt flag
 	BIT	7,A				;Check for interrupt
 	JR	Z,NOINT			;No interrupt
@@ -109,6 +110,7 @@ NEXT:
 	LD	A,40h			;Clear flag byte
 	LD	(INTFLAG),A		;Interrupt flag into HL
 	JR	NEXTADDR		;JP (HL)
+.endif
 NOINT:
 	LD	A,(BC)			;effectively LD HL,(BC)
 	INC	BC			;
@@ -1120,6 +1122,7 @@ C_LIMIT:
 	.WORD	C_FETCH			;Get word from addr on stack
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
+.ifdef BLOCKS
 W_BBUF:
 	define_word(`b/buf')
 C_BBUF:
@@ -1135,6 +1138,7 @@ C_BSCR:
 	.WORD	C_UBSCR			;Number of buffers per block
 	.WORD	C_FETCH			;Get word from addr on stack
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+.endif
 
 W_S0:					;Push S0 (initial data stack pointer)
 	define_word(`s0')
@@ -1184,11 +1188,13 @@ C_VOC_LINK:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	VOC_LINK-SYSTEM
 
+.ifdef BLOCKS
 W_BLK:
 	define_word(`blk')
 C_BLK:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	BLK-SYSTEM
+.endif
 
 W_TOIN:
 	define_word(`>in')
@@ -1334,6 +1340,7 @@ C_UABORT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	UABORT-SYSTEM
 
+.ifdef NATIVECALL
 W_RAF:
 	define_word(`raf')
 C_RAF:
@@ -1472,6 +1479,7 @@ C_CALL:
 	POP	BC			;Restore BC
 	POP	DE			;Restore DE
 	JP	NEXT			;
+.endif
 
 W_1PLUS:				;1 plus
 	define_word(`1+')
@@ -1796,6 +1804,7 @@ C_WHATSTACK:
 	.WORD	C_QERROR		;Error if stack top -1 <> 0
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
+.ifdef BLOCKS
 W_QLOADING:
 	define_word(`?loading')
 C_QLOADING:
@@ -1807,6 +1816,7 @@ C_QLOADING:
 	.WORD	0016h
 	.WORD	C_QERROR
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+.endif
 
 W_COMPILE:
 	define_word(`compile')
@@ -2118,6 +2128,7 @@ W_NULL:
 	.WORD	W_QUERY
 C_NULL:
 	.WORD	E_COLON			;Interpret following word sequence
+.ifdef BLOCKS
 	.WORD	C_BLK
 	.WORD	C_FETCH			;Get word from addr on stack
 	.WORD	C_0BRANCH		;Add offset to BC if stack top = 0
@@ -2143,6 +2154,7 @@ B0014:
 	.WORD	C_BRANCH		;Add following offset to BC
 	.WORD	B0015-$			;0006h
 B0013:
+.endif
 	.WORD	C_RMOVE			;Move word from return to data stack
 	.WORD	C_DROP			;Drop top value from stack
 B0015:
@@ -2214,6 +2226,7 @@ W_WORD:
 	define_word(`word')
 C_WORD:
 	.WORD	E_COLON			;Interpret following word sequence
+.ifdef BLOCKS
 	.WORD	C_BLK
 	.WORD	C_FETCH			;Get word from addr on stack
 	.WORD	C_0BRANCH		;Add offset to BC if stack top = 0
@@ -2224,6 +2237,7 @@ C_WORD:
 	.WORD	C_BRANCH		;Add following offset to BC
 	.WORD	B0017-$			;0006h
 B0016:
+.endif
 	.WORD	C_TIB
 	.WORD	C_FETCH			;Get word from addr on stack
 B0017:
@@ -2388,6 +2402,7 @@ S_START7:
 S_END7:
 	.WORD	C_MESSAGE		;Output message
 	.WORD	C_SPSTORE		;Set initial stack pointer value
+.ifdef BLOCKS
 	.WORD	C_BLK
 	.WORD	C_FETCH			;Get word from addr on stack
 	.WORD	C_QUERYDUP
@@ -2397,6 +2412,7 @@ S_END7:
 	.WORD	C_FETCH			;Get word from addr on stack
 	.WORD	C_SWAP			;Swap top 2 values on stack
 B0020:
+.endif
 	.WORD	C_QUIT
 
 W_ID:					;Print definition name from name field addr
@@ -2438,9 +2454,7 @@ B0021:
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
 	.WORD	00A0h
 	.WORD	C_TOGGLE		;XOR (addr) with byte
-
-; This shouldn't be needed. What's the reason to toggle it?
-; But when I removed it, it hands on :
+; Can't remove toggle below yet. TODO: Need to change <find>.
 	.WORD	C_HERE			;Dictionary pointer onto stack
 	.WORD	C_1MINUS		;Decrement by 1
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
@@ -2647,9 +2661,11 @@ W_QUIT:
 	define_word(`quit')
 C_QUIT:
 	.WORD	E_COLON			;Interpret following word sequence
+.ifdef BLOCKS
 	.WORD	C_ZERO			;Put zero on stack
 	.WORD	C_BLK			;Get current BLK pointer
 	.WORD	C_STORE			;Set BLK to 0
+.endif
 	.WORD	C_LEFTBRKT		;Set STATE to execute
 B002C:
 	.WORD	C_RPSTORE		;Set initial return stack pointer
@@ -2729,7 +2745,9 @@ W_COLD:
 	.WORD	X_COLD
 C_COLD:
 	.WORD	E_COLON			;Interpret following word sequence
+.ifdef BLOCKS
 	.WORD	C_EBUFFERS		;Clear pseudo disk buffer
+.endif
 	.WORD	C_ZERO			;Put zero on stack
 	.WORD	C_OFFSET		;Put disk block offset on stack
 	.WORD	C_STORE			;Clear disk block offset
@@ -2924,6 +2942,7 @@ C_MDIVMOD:
 	.WORD	C_RMOVE			;Move word from return to data stack
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
+.ifdef BLOCKS
 W_CLINE:
 	define_word(`<line>')
 C_CLINE:
@@ -2949,11 +2968,13 @@ C_DOTLINE:
 	.WORD	C_TRAILING
 	.WORD	C_TYPE			;Output n bytes from addr
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+.endif
 
 W_MESSAGE:
 	define_word(`message')
 C_MESSAGE:
 	.WORD	E_COLON			;Interpret following word sequence
+.ifdef BLOCKS
 	.WORD	C_WARNING		;Put WARNING addr on stack
 	.WORD	C_FETCH			;Get WARNING value
 	.WORD	C_0BRANCH		;If WARNING = 0 output MSG # n
@@ -2974,6 +2995,7 @@ B0032:
 	.WORD	C_BRANCH		;Add following offset to BC
 	.WORD	B0033-$			;000Dh
 B0031:
+.endif
 	.WORD	C_CQUOTE		;Output following string
 		.BYTE	S_END2-S_START2
 S_START2:
@@ -3007,6 +3029,7 @@ C_PORTOUT:
 	CALL	PST			;Call port out routine
 	JP	NEXT
 
+.ifdef BLOCKS
 W_USE:
 	define_word(`use')
 C_USE:
@@ -3071,6 +3094,7 @@ C_RW:
 	.WORD	C_FETCH			;Get word from addr on stack
 	.WORD	C_EXECUTE		;Jump to address on stack
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+.endif
 CF_URW:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DROP			;Drop top value from stack
@@ -3119,6 +3143,7 @@ B0050:
 	.WORD	C_CR			;Output [CR][LF]
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
+.ifdef BLOCKS
 W_LOAD:
 	define_word(`load')
 C_LOAD:
@@ -3162,11 +3187,16 @@ C_NEXTSCREEN:
 	.WORD	C_BLK
 	.WORD	C_PLUSSTORE		;Add n1 to addr
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+.endif
 
 W_TICK:
 	.set last_word_address, .
 	.BYTE	81h,27h+80h ; XXX
+.ifdef BLOCKS
 	.WORD	W_NEXTSCREEN
+.else
+	.WORD	W_DUMP
+.endif
 C_TICK:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_MFIND			;Find name returns PFA,length,true or false
@@ -3538,6 +3568,7 @@ B0039:
 	.WORD	C_CR			;Output [CR][LF]
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
+.ifdef BLOCKS
 W_LIST:
 	define_word(`list')
 C_LIST:
@@ -3609,7 +3640,9 @@ B003C:
 	.WORD	B003D-$			;FFE4h
 	.WORD	C_CR			;Output [CR][LF]
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+.endif
 
+.ifdef INTERRUPTS
 W_INT:
 	define_immediate_word(`;int')
 C_INT:
@@ -3639,6 +3672,7 @@ W_INTVECT:
 C_INTVECT:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	INTVECT-SYSTEM
+.endif
 
 W_CPU:
 	define_word(`.cpu')
@@ -3831,6 +3865,7 @@ C_NEXT:
 	.WORD	C_COMMA			;Reserve 2 bytes and save n
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
+.ifdef BLOCKS
 W_LLOAD:
 	define_word(`lload')
 C_LLOAD:
@@ -3876,7 +3911,7 @@ LL_CHAR:
 	.WORD	C_DROP			;Drop EOF character
 	.WORD	C_DROP			;Drop next address
 	.WORD	C_STOP			;Pop BC from return stack (=next)
-
+.endif
 
 W_TASK:
 	define_word(`task') ; empty word -- is this customary marker in the dictionary?
@@ -3889,6 +3924,7 @@ W_TASKEND:
 W_EDITI: ; what is that? looks like a start pointer for editor dictionary
 ; currently it contains only one "clear" word... WIP?
 
+.ifdef BLOCKS
 W_CLEAR:				;Clear block n
 	define_word(`clear')
 C_CLEAR:
@@ -3900,6 +3936,7 @@ C_CLEAR:
 	.WORD	C_BBUF			;Put number of bytes/block on stack
 	.WORD	C_ERASE			;Clear the block
 	.WORD	C_STOP			;Pop BC from return stack (=next)
+.endif
 
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code

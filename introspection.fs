@@ -1,8 +1,8 @@
 ( introspection )
 variable wordranges
-' lit cfa wordranges !
-' lload cfa , ( from lit to lload in ROM )
-' task cfa ,
+' lit cfa wordranges ! ( first word in the dictionary )
+' task lfa @ pfa cfa , ( word before task is in ROM )
+' task cfa , ( task is copied to RAM )
 
 : ?exit if r> drop exit then ;
 
