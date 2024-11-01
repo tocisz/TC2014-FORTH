@@ -287,46 +287,68 @@ C_FIND:
 	POP	DE			;Get pointer to next vocabulary word
 COMPARE:
 	POP	HL			;Copy pointer to word we're looking 4
-	PUSH	HL			;
-	LD	A,(DE)			;Get 1st vocabulary word letter
+	push	bc		; 1. BC backup (must be restored before NEXT)
+	LD	A,(DE)			;Get vocabulary word length+flags
+	AND	3Fh			;Ignore start and immediate flag
+	ld	b,0
+	ld	c,a		; BC is length... not exactly, for smudged it's length+32
+	res	5,c		; clear smudge
+	PUSH	HL		; 2. word to find
+	push	de		; 3. vocabulary word NFA
+	ex	de,hl
+	add	hl,bc
+	ld	b,h
+	ld	c,l		; BC is LFA-1
+	pop	hl
+	push	hl	; HL - NFA, DE - to find
+	ex	de,hl	; HL - to find, DE - NFA
 	XOR	(HL)			;Compare with what we've got
-	AND	3Fh			;Ignore start flag
-	JR	NZ,NOT_END_CHR		;No match so skip to next word
+	JR	NZ,NO_MATCH		;No match so skip to next word
 MATCH_NO_END:
+	; s: BC, dictionary word, word to find; BC: LFA-1, DE: dict word ptr, HL: word ptr
+	; if BC = DE then it's a MATCH
+	ld	a,c
+	xor	e
+	jr	z,IS_END2 ;  usually it's not the end
+CONTINUE:
+	INC	DE			;Compare next chr
 	INC	HL			;Compare next chr
-	INC	DE			;
 	LD	A,(DE)			;
+	AND	7Fh			;Ignore freaking flag (for now)
 	XOR	(HL)			;
-	ADD	A,A			;Move bit 7 to C flag -- ah, here it's used
-	JR	NZ,NO_MATCH		;No match jump
-	JR	NC,MATCH_NO_END		;Match & not last, so next chr
-	LD	HL,0005			;Offset to start of code
-	ADD	HL,DE			;HL now points to code start for word
-	EX	(SP),HL			;Swap with value on stack
-NOT_WORD_BYTE:
-	DEC	DE			;Search back for word type byte
-	LD	A,(DE)			;
-	OR	A			;
-	JP	P,NOT_WORD_BYTE		;Not yet so loop
-	LD	E,A			;Byte into DE
-	LD	D,00			;
-	LD	HL,0001			;Leave TRUE flag
+	jr	NZ,NO_MATCH		;No match jump
+	JR	MATCH_NO_END		;Match & not last, so next chr
+IS_END2:
+	ld	a,b
+	xor	d
+	jr	nz,CONTINUE ; if first byte is 0 usually second too
+MATCH:
+	pop	hl		; 3. NFA
+	pop	de		; 2. word to find - discard it
+	ld	d,0
+	ld	e,(hl)		; return(2) word header
+	ld	hl,5
+	add	hl,bc
+	pop	bc		; 1. BC - OK
+	push	hl		; return(3) PFA
+	LD	HL,1		; return(1) TRUE
 	JP	NEXTS2			;Save both & NEXT
 NO_MATCH:
-	JR	C,END_CHR		;If last chr then jump
-NOT_END_CHR:
-	INC	DE			;Next chr of this vocab word
-	LD	A,(DE)			;Get it
-	OR	A			;Set flags -- and here too
-	JP	P,NOT_END_CHR		;Loop if not end chr
-END_CHR:
-	INC	DE			;Now points to next word vector
-	EX	DE,HL			;Swap
+	; s: BC, dictionary word, word to find; BC: LFA-1
+	pop	hl		; 3. NFA - discard it
+	pop	de		; 2. word to find
+	inc	bc
+	ld	h,b
+	ld	l,c		; HL - LFA
+	pop	bc		; 1. BC - OK
+	push	de		; word to find -> needed by COMPARE
+	; s: word to find, HL: LFA
 	LD	E,(HL)			;Vector into DE
 	INC	HL			;
 	LD	D,(HL)			;
 	LD	A,D			;Check it's not last (first) word
 	OR	E			;
+	; s: word to find, DE: next word NFA
 	JR	NZ,COMPARE		;No error so loop
 	POP	HL			;Dump pointer
 	LD	HL,0000			;Flag error
@@ -1999,7 +2021,7 @@ B0008:
 W_CQUOTE:				;Output following string
 	.BYTE	84h
 	.ascii  "<."
-	.byte   '"', '>' + 80h		; M4 problem
+	.byte   '"', '>'		; M4 problem
 	.WORD	W_TRAILING
 C_CQUOTE:
 	.WORD	E_COLON			;Interpret following word sequence
@@ -2015,7 +2037,7 @@ C_CQUOTE:
 
 W_QUOTE:				;Accept following text
 	.set last_word_address, .
-	.BYTE	0C2h, '.', '"'+80h		; M4 problem
+	.BYTE	0C2h, '.', '"'		; M4 problem
 	.WORD	W_CQUOTE
 C_QUOTE:
 	.WORD	E_COLON			;Interpret following word sequence
@@ -2124,7 +2146,7 @@ C_QUERY:
 
 W_NULL:
 	.set last_word_address, .
-	.BYTE	0C1h,80h		; M4 problem ?
+	.BYTE	0C1h,00h		; M4 problem ?
 	.WORD	W_QUERY
 C_NULL:
 	.WORD	E_COLON			;Interpret following word sequence
@@ -2454,13 +2476,6 @@ B0021:
 	.WORD	C_LIT			;Puts next 2 bytes on the stack
 	.WORD	00A0h
 	.WORD	C_TOGGLE		;XOR (addr) with byte
-; Can't remove toggle below yet. TODO: Need to change <find>.
-	.WORD	C_HERE			;Dictionary pointer onto stack
-	.WORD	C_1MINUS		;Decrement by 1
-	.WORD	C_LIT			;Puts next 2 bytes on the stack
-	.WORD	0080h
-	.WORD	C_TOGGLE		;XOR (addr) with byte
-
 	.WORD	C_LATEST		;Push top words NFA
 	.WORD	C_COMMA			;Reserve 2 bytes and save n
 	.WORD	C_CURRENT
@@ -2643,7 +2658,7 @@ C_DEFINITIONS:
 W_OPENBRKT:
 	.set this_word, .
     .byte 0C0h+1
-    .byte '`('' + 80h	; M4 problem
+    .byte '`(''				; M4 problem
 	.word last_word_address
 	.set last_word_address, this_word
 C_OPENBRKT:
@@ -3997,9 +4012,7 @@ BREAKKEY:
 	RET
 
 CHR_WR:					;Character out
-    AND 7Fh         ;To knock off end of word marker
-	; if I want to support UTF-8 this will need to be solved better
-    RST 08h
+	RST 08h
 	RET
 
 .section .bss
