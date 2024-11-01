@@ -1400,25 +1400,25 @@ C_RIY:
 	.WORD	RIY-SYSTEM
 
 W_RAF2:
-	define_comma_word(`raf')
+	define_word(`raf,')
 C_RAF2:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RAF2-SYSTEM
 
 W_RBC2:
-	define_comma_word(`rbc')
+	define_word(`rbc,')
 C_RBC2:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RBC2-SYSTEM
 
 W_RDE2:
-	define_comma_word(`rde')
+	define_word(`rde,')
 C_RDE2:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RDE2-SYSTEM
 
 W_RHL2:
-	define_comma_word(`rhl')
+	define_word(`rhl,')
 C_RHL2:
 	.WORD	X_USER			;Put next word on stack then do next
 	.WORD	RHL2-SYSTEM
@@ -1555,7 +1555,7 @@ C_ALLOT:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_COMMA:				;Reserve 2 bytes and save n
-	define_comma_word(`')
+	define_word(`,')
 C_COMMA:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_HERE			;Next free dictionary pointer onto stack
@@ -1565,7 +1565,7 @@ C_COMMA:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 
 W_CCOMMA:
-	define_comma_word(`c')
+	define_word(`c,')
 C_CCOMMA:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_HERE			;Dictionary pointer onto stack
