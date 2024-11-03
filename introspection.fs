@@ -13,8 +13,8 @@ variable wordranges
   dup [ ' branch cfa ] literal = ?exit
   dup [ ' 0branch cfa ] literal = ?exit
   dup [ ' <loop> cfa ] literal = ?exit
-  [ ' <+loop> cfa ] literal = ?exit
-  0
+  dup [ ' <+loop> cfa ] literal = ?exit
+  drop 0
 ;
 
 ( checks below expect cfa )
@@ -44,7 +44,7 @@ variable wordranges
   dup if ." ..." then
   ?exit ( exit if F != 0 )
   dup [ ' ;s cfa ] literal = ( 1 w F )
-  dup if ." ;" then
+  dup if ." ;s" then
   ?exit
   dup [ ' <;code> cfa ] literal = ( 1 w F )
   dup if ." ;<code> ..." then

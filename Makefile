@@ -1,14 +1,13 @@
 ASSEMBLER = z80-unknown-coff-as
 LINKER = z80-unknown-coff-ld
 OBJCOPY = z80-unknown-coff-objcopy
-M4 = m4
+PYTHON = python3
 
 ASFLAGS = -a
 LDFLAGS =
 
 LD_FILES := $(wildcard *.ld)
-SRC_ASM := $(wildcard *.asm)
-OBJ_FILES := $(patsubst %.asm,%.out,$(SRC_ASM))
+OBJ_FILES := int32k.o forth.o
 
 all: rom.bin ram.hex
 
@@ -24,11 +23,11 @@ rom.out: $(OBJ_FILES) $(LD_FILES)
 ram.out: $(OBJ_FILES) $(LD_FILES)
 	$(LINKER) $(LDFLAGS) -T ram.ld -Map=ram.map $(OBJ_FILES) -o $@
 
-%.s: %.asm macros.m4
-	$(M4) $< > $@
-
-%.out: %.s
+%.o: %.asm
 	$(ASSEMBLER) $(ASFLAGS) $< -o $@ > $<.lst
 
+forth.asm: forth.py
+	$(PYTHON) $< > $@
+
 clean:
-	rm -f *.hex *.out *.bin *.map *.lst *.s
+	rm -f forth.asm *.hex *.out *.o *.bin *.map *.lst

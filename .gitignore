@@ -3,4 +3,4 @@
 *.bin
 *.map
 *.lst
-*.s
+forth.asm

@@ -17,11 +17,11 @@
 : b/scr ub/scr @ ;
 
 : here dp @ ;
-: allot dp +! ; 
+: allot dp +! ;
 : , here ! 2 allot ;
 : c, here c! 1 allot ;
 
-: = - 0= ; 
+: = - 0= ;
 : u<
   2dup xor 0< if
     drop 0< 0=
