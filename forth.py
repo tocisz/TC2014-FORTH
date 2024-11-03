@@ -1,6 +1,5 @@
 import re
 
-
 chunks = []
 label_of = dict()
 
@@ -107,9 +106,9 @@ verbatim(""";-------------------------------------------------------------------
 ; to other Z80 systems. It assumes RAM from 9000h to 0FFFFh and a UART for
 ; communication with the host or VDU.
 
-INTERRUPTS = 1
-BLOCKS = 1
-NATIVECALL = 1
+;INTERRUPTS = 1
+;BLOCKS = 1
+;NATIVECALL = 1
 
 DATA_STACK:	.EQU	0FD80h		;Data stack grows down
 VOCAB_BASE:	.EQU	0F000h		;Dictionary grows up from here
@@ -1075,10 +1074,10 @@ word("RDE:rde", "user RDE-SYSTEM")
 word("RHL:rhl", "user RHL-SYSTEM")
 word("RIX:rix", "user RIX-SYSTEM")
 word("RIY:riy", "user RIY-SYSTEM")
-word("RAF2:raf,", "user RAF2-SYSTEM")
-word("RBC2:rbc,", "user RBC2-SYSTEM")
-word("RDE2:rde,", "user RDE2-SYSTEM")
-word("RHL2:rhl,", "user RHL2-SYSTEM")
+word("RAF2:raf'", "user RAF2-SYSTEM")
+word("RBC2:rbc'", "user RBC2-SYSTEM")
+word("RDE2:rde'", "user RDE2-SYSTEM")
+word("RHL2:rhl'", "user RHL2-SYSTEM")
 word("RA:ra", "user RAF+1-SYSTEM")
 word("RF:rf", "user RAF-SYSTEM")
 word("RB:rb", "user RBC+1-SYSTEM")
@@ -1693,7 +1692,6 @@ word("EBUFFERS:empty-buffers", ": first limit over - erase ;s")
 word("BUFFER:buffer", ": block ;s")
 word("BLOCK:block", ": lit 40 mod offset @ + b/buf * first + ;s")
 word("RW:r/w", ": ur/w @ execute ;s")
-
 verbatim("""
 .endif
 CF_URW:
@@ -1703,8 +1701,14 @@ CF_URW:
 	.WORD	C_DROP			;Drop top value from stack
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 """)
-# XXX this also belongs to blocks
+
+verbatim("""
+.ifdef BLOCKS
+""")
 word("FLUSH:flush", ": ;s")
+verbatim("""
+.endif
+""")
 
 word("DUMP:dump", """:
 0 <do>
