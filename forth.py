@@ -317,6 +317,15 @@ X_I2:
 	JP	NEXT
 """)
 
+asm_word("J:j", """
+	LD	HL,(RPP)		;Get return stack pointer
+	INC	HL			;Skip inner loop values
+	INC	HL			;
+	INC	HL			;
+	INC	HL			;
+	JP	X_I2
+""")
+
 asm_word("DIGIT:digit", """
 	POP	HL			;Get base to use
 	POP	DE			;Get char
@@ -1596,6 +1605,7 @@ word("REPEAT:repeat", ": >r >r again r> r> 2 - endif ;s", immediate=True)
 word("IF:if", ": compile 0branch here 0 , 2 ;s", immediate=True)
 word("ELSE:else", ": 2 ?pairs compile branch here 0 , swap 2 endif 2 ;s", immediate=True)
 word("WHILE:while", ": if 2+ ;s", immediate=True)
+
 word("SPACES:spaces", ": 0 max ?dup 0branch 12 0 <do> space <loop> -4 ;s")
 
 word("LESSHARP:<#", ": pad hld ! ;s")
@@ -1626,15 +1636,6 @@ word("2SWAP:2swap", ": rot >r rot r> ;s")
 word("2OVER:2over", ": >r >r 2dup r> r> 2swap ;s")
 
 word("EXIT:exit", ";s")
-
-asm_word("J:j", """
-	LD	HL,(RPP)		;Get return stack pointer
-	INC	HL			;Skip inner loop values
-	INC	HL			;
-	INC	HL			;
-	INC	HL			;
-	JP	X_I2
-""")
 
 word("ROLL:roll", """:
 dup 0 > 0branch 44
@@ -1917,7 +1918,9 @@ elif sys.argv[1] in ['edges','essential']:
 					visited.add(w)
 					if w in edges:
 						descendants(list(edges[w]))
-		descendants(['WARM','COLD','QUIT','TASK','FORTH','NULL','COLON','SEMICOLON','CONSTANT','USER','DOES','DECIMAL','DEFINITIONS','OFFSET','WORDS'])
+		basicwords = ['WARM','COLD','QUIT','TASK','FORTH','NULL','COLON','SEMICOLON','CONSTANT','USER','DOES','DECIMAL','DEFINITIONS','OFFSET','WORDS']
+		defwords = ['BACK', 'BEGIN', 'ENDIF', 'THEN', 'DO', 'LOOP', 'PLUSLOOP', 'UNTIL', 'END', 'AGAIN', 'REPEAT', 'IF', 'ELSE', 'WHILE', 'TICK']
+		descendants(basicwords+defwords)
 		for c in chunks:
 			if (c[0] in [print, print_asm_word]) or (c[1] in visited):
 				(c[0])(*c[1:])
