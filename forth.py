@@ -187,17 +187,6 @@ NEXTS2:
 NEXTS1:
 	PUSH	HL
 NEXT:
-.ifdef INTERRUPTS
-	LD	A,(INTFLAG)		;Interrupt flag
-	BIT	7,A			;Check for interrupt
-	JR	Z,NOINT			;No interrupt
-	BIT	6,A			;Interrupt enabled ?
-	JR	NZ,NOINT		;No interrupt
-	LD	HL,(INTVECT)		;Get interrupt vector
-	LD	A,40h			;Clear flag byte
-	LD	(INTFLAG),A		;Interrupt flag into HL
-	JR	NEXTADDR		;JP (HL)
-.endif
 NOINT:
 	LD	A,(BC)			;effectively LD HL,(BC)
 	INC	BC			;
@@ -1014,15 +1003,6 @@ word("CL:c/l", ": uc/l @ ;s")
 word("FIRST:first", ": ufirst @ ;s")
 word("LIMIT:limit", ": ulimit @ ;s")
 
-verbatim("""
-.ifdef BLOCKS
-""")
-word("BBUF:b/buf", ": ub/buf @ ;s")
-word("BSCR:b/scr", ": ub/scr @ ;s")
-verbatim("""
-.endif
-""")
-
 word("S0:s0", "user S0-SYSTEM")
 word("R0:r0", "user R0-SYSTEM")
 word("TIB:tib", "user TIB-SYSTEM")
@@ -1031,14 +1011,6 @@ word("WARNING:warning", "user WARNING-SYSTEM")
 word("FENCE:fence", "user FENCE-SYSTEM")
 word("DP:dp", "user DP-SYSTEM")
 word("VOC_LINK:voc-link", "user VOC_LINK-SYSTEM")
-
-verbatim("""
-.ifdef BLOCKS
-""")
-word("BLK:blk", "user BLK-SYSTEM")
-verbatim("""
-.endif
-""")
 
 word("TOIN:>in", "user TOIN-SYSTEM")
 word("OUT:out", "user OUT-SYSTEM")
@@ -1064,58 +1036,6 @@ word("UEMIT:uemit", "user UEMIT-SYSTEM")
 word("UCR:ucr", "user UCR-SYSTEM")
 word("URW:ur/w", "user URW-SYSTEM")
 word("UABORT:uabort", "user UABORT-SYSTEM")
-
-verbatim("""
-.ifdef NATIVECALL
-""")
-word("RAF:raf", "user RAF-SYSTEM")
-word("RBC:rbc", "user RBC-SYSTEM")
-word("RDE:rde", "user RDE-SYSTEM")
-word("RHL:rhl", "user RHL-SYSTEM")
-word("RIX:rix", "user RIX-SYSTEM")
-word("RIY:riy", "user RIY-SYSTEM")
-word("RAF2:raf'", "user RAF2-SYSTEM")
-word("RBC2:rbc'", "user RBC2-SYSTEM")
-word("RDE2:rde'", "user RDE2-SYSTEM")
-word("RHL2:rhl'", "user RHL2-SYSTEM")
-word("RA:ra", "user RAF+1-SYSTEM")
-word("RF:rf", "user RAF-SYSTEM")
-word("RB:rb", "user RBC+1-SYSTEM")
-word("RC:rc", "user RBC-SYSTEM")
-word("RD:rd", "user RDE+1-SYSTEM")
-word("RE:re", "user RDE-SYSTEM")
-word("RH:rh", "user RHL+1-SYSTEM")
-word("RL:rl", "user RHL-SYSTEM")
-
-asm_word("CALL:call", """
-	POP	HL			;Address of routine CALLed
-	PUSH	DE			;Save register
-	PUSH	BC			;Save register
-	LD	A,0C3h			;Hex code for JMP
-	LD	(JPCODE),A		;Save it
-	LD	(JPVECT),HL		;Save jump vector
-	LD	HL,(RAF)		;Get register AF
-	PUSH	HL			;Onto stack
-	POP	AF			;POP into AF
-	LD	BC,(RBC)		;Get register BC
-	LD	DE,(RDE)		;Get register DE
-	LD	HL,(RHL)		;Get register HL
-	LD	IX,(RIX)		;Get register IX
-	LD	IY,(RIY)		;Get register IY
-	CALL	JPCODE			;Call jump to code
-	LD	(RIY),IY		;Save register IY
-	LD	(RIX),IX		;Save register IX
-	LD	(RBC),BC		;Save register BC
-	LD	(RDE),DE		;Save register DE
-	LD	(RHL),HL		;Save register HL
-	PUSH	AF			;Save register AF
-	POP	HL			;Into HL
-	LD	(RAF),HL		;Into memory
-	POP	BC			;Restore BC
-	POP	DE			;Restore DE
-	JP	NEXT			;
-.endif
-""")
 
 asm_word("1PLUS:1+", """
 	POP	HL			; get n
@@ -1227,14 +1147,6 @@ word("QEXEC:?exec", ": state @ lit 18 ?error ;s")
 word("QPAIRS:?pairs", ": - lit 19 ?error ;s")
 word("WHATSTACK:?csp", ": sp@ csp @ - lit 20 ?error ;s")
 
-verbatim("""
-.ifdef BLOCKS
-""")
-word("QLOADING:?loading", ": blk @ 0= lit 22 ?error ;s")
-verbatim("""
-.endif
-""")
-
 word("COMPILE:compile", ": ?comp r> dup 2+ >r @ , ;s")
 word("LEFTBRKT:[", ": 0 state ! ;s", immediate=True)
 word("RIGHTBRKT:]", ": lit 192 state ! ;s")
@@ -1342,17 +1254,6 @@ lit 80 expect
 ;s""")
 
 word("NULL:\0", """:
-{.ifdef BLOCKS}
-blk @
-0branch 40
-	1 blk +!
-	0 >in !
-	blk @
-	b/scr 1- and 0=
-	0branch 8
-		?exec r> drop
-branch 6
-{.endif}
 	r> drop
 ;s""", immediate=True)
 
@@ -1383,13 +1284,7 @@ word("HOLD:hold", ": lit -1 hld +! hld @ c! ;s")
 word("PAD:pad", ": here lit 68 + ;s")
 
 word("WORD:word", """:
-{.ifdef BLOCKS}
-blk @
-0branch 12
-	blk @ block
-branch 6
-{.endif}
-	tib @
+tib @
 >in @ + swap enclose here
 lit 34 blanks
 >in +! over - >r r@ here c! + here 1+ r>
@@ -1445,11 +1340,6 @@ warning @ 0<
 	<abort>
 here count type <."> {"? "} message
 sp!
-{.ifdef BLOCKS}
-blk @ ?dup
-0branch 8
-	>in @ swap
-{.endif}
 quit""")
 
 word("ID:id.", ": count lit 31 and type space ;s")
@@ -1534,9 +1424,6 @@ word("OPENBRKT:(", ": lit 41 word drop ;s", immediate=True)
 # This it the last thing ever executed and is the interpreter
 # outer loop. This NEVER quits.
 word("QUIT:quit", """:
-{.ifdef BLOCKS}
-0 blk !
-{.endif}
 [
 	rp!
 	cr
@@ -1595,9 +1482,6 @@ W_COLD:
 	.WORD	X_COLD
 C_COLD:
 	.WORD	E_COLON			;Interpret following word sequence
-.ifdef BLOCKS
-	.WORD	C_EBUFFERS		;Clear pseudo disk buffer
-.endif
 	.WORD	C_ZERO			;Put zero on stack
 	.WORD	C_OFFSET		;Put disk block offset on stack
 	.WORD	C_STORE			;Clear disk block offset
@@ -1639,26 +1523,8 @@ word("TIMESDIVMOD:*/mod", ": >r m* r> m/ ;s")
 word("TIMESDIV:*/", ": */mod swap drop ;s")
 word("MDIVMOD:m/mod", ": >r 0 r@ u/mod r> swap >r u/mod r> ;s")
 
-verbatim("""
-.ifdef BLOCKS
-""")
-word("CLINE:<line>", ": >r c/l b/buf */mod r> b/scr * + block + c/l ;s")
-word("DOTLINE:.line", ": <line> -trailing type ;s")
-verbatim("""
-.endif
-""")
-
 word("MESSAGE:message", """:
-{.ifdef BLOCKS}
-warning @ 0branch 30
-	?dup 0branch 20
-		lit 4
-		offset @
-		b/scr / - .line
-		space
-	branch 13
-{.endif}
-		<."> {"MSG # "} .
+<."> {"MSG # "} .
 ;s""")
 
 asm_word("PORTIN:p@", """
@@ -1682,32 +1548,12 @@ asm_word("PORTOUT:p!", """
 """)
 
 verbatim("""
-.ifdef BLOCKS
-""")
-word("USE:use", "user USE-SYSTEM")
-word("PREV:prev", "user PREV-SYSTEM")
-word("PLUSBUF:+buf", "NEXT")
-word("UPDATE:update", "NEXT")
-word("EBUFFERS:empty-buffers", ": first limit over - erase ;s")
-word("BUFFER:buffer", ": block ;s")
-word("BLOCK:block", ": lit 40 mod offset @ + b/buf * first + ;s")
-word("RW:r/w", ": ur/w @ execute ;s")
-verbatim("""
-.endif
 CF_URW:
 	.WORD	E_COLON			;Interpret following word sequence
 	.WORD	C_DROP			;Drop top value from stack
 	.WORD	C_DROP			;Drop top value from stack
 	.WORD	C_DROP			;Drop top value from stack
 	.WORD	C_STOP			;Pop BC from return stack (=next)
-""")
-
-verbatim("""
-.ifdef BLOCKS
-""")
-word("FLUSH:flush", ": ;s")
-verbatim("""
-.endif
 """)
 
 word("DUMP:dump", """:
@@ -1724,30 +1570,6 @@ word("DUMP:dump", """:
 drop
 cr
 ;s""")
-
-verbatim("""
-.ifdef BLOCKS
-""")
-word("LOAD:load", """:
-blk @ >r
->in @ >r
-0 >in !
-b/scr * blk !
-interpret
-r> >in !
-r> blk !
-;s""")
-
-word("NEXTSCREEN:-->", """:
-?loading
-0 >in !
-b/scr blk @
-over mod - blk +!
-;s""", immediate=True)
-
-verbatim("""
-.endif
-""")
 
 word("TICK:'", ": -find 0= 0 ?error drop literal ;s")
 
@@ -1797,61 +1619,6 @@ cr
 drop
 cr
 ;s""")
-
-verbatim("""
-.ifdef BLOCKS
-""")
-
-word("LIST:list", """:
-base @ swap
-decimal
-cr
-dup scr !
-<."> {"SCR # "} .
-lit 16 0 <do>
-	cr
-	i lit 0003h .r
-	space
-	i scr @ .line
-	?terminal 0branch 4
-		leave
-<loop> -30
-cr
-base !
-;s""")
-
-word("INDEX:index", """:
-1+ swap <do>
-	cr
-	i lit 0003h .r
-	space
-	0 i .line
-	?terminal 0branch 4
-		leave <loop>
--28
-cr
-;s""")
-
-verbatim("""
-.endif
-
-.ifdef INTERRUPTS
-""")
-def_word("INT:;int", ": ?csp compile X_INT [ smudge ;s", """
-X_INT:
-	.WORD	2+$			;Vector to code
-	LD	HL,INTFLAG
-	RES	6,(HL)
-	EI
-	JP	X_STOP
-""", immediate=True)
-
-word("INTFLAG:intflag", "user INTFLAG-SYSTEM")
-word("INTVECT:intvect", "user INTVECT-SYSTEM")
-
-verbatim("""
-.endif
-""")
 
 word("CPU:.cpu", ': <."> {"Z80 "} ;s')
 
@@ -1909,29 +1676,6 @@ word("CODE:code", ": ?exec xxx sp! ;s")
 word("ENDCODE:end-code", ": current @ context ! ?exec ?csp smudge ;s")
 word("NEXT:next", ": lit 195 c, lit NEXT , ;s", immediate=True)
 
-verbatim("""
-.ifdef BLOCKS
-""")
-word("LLOAD:lload", """:
-block
-lit 0000h
-	dup 0branch 40
-		dup lit 13 = 0branch 18
-			drop c/l + c/l negate and
-		branch 6
-			over !
-		1+
-	branch 4
-		drop
-	key
-	dup lit 26 =
-0branch -58
-drop drop
-;s""")
-verbatim("""
-.endif
-""")
-
 word("TASK:task", ": ;s")
 
 verbatim("""
@@ -1939,13 +1683,6 @@ W_TASKEND:
 
 W_EDITI: ; what is that? looks like a start pointer for editor dictionary
 ; currently it contains only one "clear" word... WIP?
-
-.ifdef BLOCKS
-""")
-word("CLEAR:clear", ": dup scr ! block b/buf erase ;s")
-
-verbatim("""
-.endif
 
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code
