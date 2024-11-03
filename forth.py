@@ -1609,7 +1609,7 @@ word("DDOT:d.", ": 0 d.r space ;s")
 word("DOT:.", ": s->d d. ;s")
 word("QUESTION:?", ": @ . ;s")
 word("UDOT:u.", ": 0 d. ;s")
-word("VLIST:words", """:
+word("WORDS:words", """:
 context @ @
 cr
 	dup pfa swap id.
@@ -1917,6 +1917,7 @@ elif sys.argv[1] in ['edges','essential']:
 					visited.add(w)
 					if w in edges:
 						descendants(list(edges[w]))
-		descendants(['WARM','COLD','QUIT'])
-		for w in visited:
-			print(w)
+		descendants(['WARM','COLD','QUIT','TASK','FORTH','NULL','COLON','SEMICOLON','CONSTANT','USER','DOES','DECIMAL','DEFINITIONS','OFFSET','WORDS'])
+		for c in chunks:
+			if (c[0] in [print, print_asm_word]) or (c[1] in visited):
+				(c[0])(*c[1:])

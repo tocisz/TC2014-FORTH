@@ -27,7 +27,7 @@ ram.out: $(OBJ_FILES) $(LD_FILES)
 	$(ASSEMBLER) $(ASFLAGS) $< -o $@ > $<.lst
 
 forth.asm: forth.py
-	$(PYTHON) $< > $@
+	$(PYTHON) $< essential > $@
 
 clean:
 	rm -f forth.asm *.hex *.out *.o *.bin *.map *.lst
