@@ -189,11 +189,11 @@ NEXTS1:
 NEXT:
 .ifdef INTERRUPTS
 	LD	A,(INTFLAG)		;Interrupt flag
-	BIT	7,A				;Check for interrupt
+	BIT	7,A			;Check for interrupt
 	JR	Z,NOINT			;No interrupt
-	BIT	6,A				;Interrupt enabled ?
+	BIT	6,A			;Interrupt enabled ?
 	JR	NZ,NOINT		;No interrupt
-	LD	HL,(INTVECT)	;Get interrupt vector
+	LD	HL,(INTVECT)		;Get interrupt vector
 	LD	A,40h			;Clear flag byte
 	LD	(INTFLAG),A		;Interrupt flag into HL
 	JR	NEXTADDR		;JP (HL)
@@ -212,7 +212,7 @@ NEXTADDR:
 	EX	DE,HL 			; ADJUST_HERE
 	JP	(HL) 			;Jump to it
 
-.set last_word_address, 0000h ;First word in vocabulary
+.set last_word_address, 0000h		;First word in vocabulary
 """)
 
 asm_word("LIT:lit", """
@@ -872,10 +872,10 @@ asm_word("PLUSSTORE:+!", """
 """)
 
 asm_word("TOGGLE:toggle", """
-	POP	DE			 	;Get byte
-	POP	HL				;Get addr
+	POP	DE			;Get byte
+	POP	HL			;Get addr
 	LD	A,(HL)			;Get byte from addr
-	XOR	E				;Toggle it
+	XOR	E			;Toggle it
 	LD	(HL),A			;Save result
 	JP	NEXT
 """)
@@ -2124,5 +2124,62 @@ JPVECT:		.space	2		;JMP vector for word CALL
 
 ;==============================================================================""")
 
-for c in chunks:
-	(c[0])(*c[1:])
+import sys
+
+if len(sys.argv) == 1:
+	for c in chunks:
+		(c[0])(*c[1:])
+
+elif sys.argv[1] == 'nodes':
+	print("Name,Type")
+	for c in chunks:
+		t = None
+		if c[0] == print_word:
+			t = "code"
+		if c[0] == print_asm_word:
+			t = "asm"
+		elif c[0] == print_def_word:
+			t = "def"
+		if t:
+			print(f"{c[1]},{t}")
+
+elif sys.argv[1] in ['edges','essential']:
+	edges = {}
+	for c in chunks:
+		t = None
+		if c[0] == print_word:
+			t = "code"
+		if c[0] == print_asm_word:
+			t = "asm"
+		elif c[0] == print_def_word:
+			t = "def"
+		if t not in ["code","def"]:
+			continue
+		[label, name, words] = c[1:4]
+		curly = CurlySubst()
+		words = re.sub(curly.pattern, curly.eval_curly, words.strip())
+		ws = re.split(r'\s+', words.strip())
+		out = set()
+		for w in ws[1:]:
+			n = find('',w)
+			if n != w:
+				out.add(n[1:])
+		edges[label] = out
+
+	if sys.argv[1] == 'edges':
+		print("Source,Target")
+		for label, out in edges.items():
+			for o in out:
+				print(f"{label},{o}")
+
+	elif sys.argv[1] == 'essential':
+		visited = set()
+		def descendants(words):
+			for w in words:
+				if w not in visited:
+					visited.add(w)
+					if w in edges:
+						descendants(list(edges[w]))
+		descendants(['WARM','COLD','QUIT'])
+		for w in visited:
+			print(w)
