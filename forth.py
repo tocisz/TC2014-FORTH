@@ -145,12 +145,12 @@ DEF_SYSADDR:
 	.WORD	E_FORTH			;Most recently created vocab.
 
 START_TABLE:
-	.WORD	0A081h
+	.WORD	2081h
 	.WORD	VOCAB_BASE
-	.WORD	0000h			;FLAST
-	.WORD	0A081h
+	.WORD	0000h			;goes to FLAST
+	.WORD	2081h
 	.WORD	W_EDITI
-	.WORD	E_FORTH			;ELAST
+	.WORD	E_FORTH			;goes to ELAST
 	.BYTE	00h			;CRFLAG
 	.BYTE	00h			;Free
 	IN	A,(00h)			;I/O Port input
@@ -1427,7 +1427,7 @@ r> 0branch 4
 	dnegate
 ;s""")
 
-
+# why context is not enough? why also search in latest?
 word("MFIND:-find", """:
 bl word
 context @ @
@@ -1508,11 +1508,22 @@ branch -62
 
 word("IMMEDIATE:immediate", ": latest lit 64 toggle ;s")
 
+# this creates a word that represents vocabulary
+# this word looks like it has double header 1. word header 2. dictionary header (with " " for a name)
+# one links to previous word, second one to previous dictionary
+# but it's strange that when switching from one dictionary to the other this shifted header is shown...
+#  current - where new definitions go
+#  context - where to look-up words for execution
+#  voc-link - points to previous vocabulary(?)
+#   supposedly useful for "forget" but it doesn't use it...
+# looks like voc-link gives linear history of created dictionaries
+# while LFA of vocabulary word can create tree structure
 word("VOCABULARY:vocabulary", """:
 create
-lit 0xA081 ,
+lit 2081h ,
 current @ cfa ,
-here voc-link @ ,
+here
+voc-link @ ,
 voc-link !
 does> 2+ context !
 ;s""")
@@ -1526,7 +1537,9 @@ C_LINK:
 	.WORD	C_STOP			;Pop BC from return stack (=next)
 """)
 
-word("FORTH:forth", "does> C_LINK 0A081h FLAST+2 {E_FORTH:} 0000h", immediate=True)
+# FLAST+2 contains pointer to NFA of TASK (last ootb FORTH word)
+word("FORTH:forth", "does> C_LINK 2081h FLAST+2 {E_FORTH:} 0000h", immediate=True)
+# TODO how to add "editor" word ootb?
 
 word("DEFINITIONS:definitions", ": context @ current ! ;s")
 word("OPENBRKT:(", ": lit 41 word drop ;s", immediate=True)
@@ -2034,14 +2047,14 @@ RHASH:		.space	2		;Location of editor cursor in a text block
 HLD:		.space	2		;Address of current output
 ; START_TABLE is copied here
 /*
-	.BYTE	81h,0A0h
-	.WORD	VOCAB_BASE
-	.BYTE	00h,00h			;FLAST
+	.WORD   2081h
+	.WORD	VOCAB_BASE (NFA of TASK word)
+	.WORD	0000h			;FLAST
 */
 FLAST:		.space	6		;FORTH vocabulary data initialised to FORTH
 					;vocabulary
 /*
-	.BYTE	81h,0A0h
+	.WORD	2081h
 	.WORD	W_EDITI
 	.WORD	E_FORTH			;ELAST
 */
