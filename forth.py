@@ -2133,7 +2133,7 @@ elif sys.argv[1] == 'nodes':
 		if t:
 			print(f"{c[1]},{t}")
 
-elif sys.argv[1] in ['edges','essential']:
+elif sys.argv[1] in ['edges','essential','gv']:
 	edges = {}
 	for c in chunks:
 		t = None
@@ -2161,6 +2161,22 @@ elif sys.argv[1] in ['edges','essential']:
 		for label, out in edges.items():
 			for o in out:
 				print(f"{label},{o}")
+
+	if sys.argv[1] == 'gv':
+		visited = set()
+		def descendants(words):
+			for w in words:
+				if w not in visited:
+					visited.add(w)
+					if w in edges:
+						descendants(list(edges[w]))
+		descendants(['WARM','COLD','QUIT'])
+
+		print("digraph G {")
+		for label, out in edges.items():
+			if (label in visited) and (len(out) > 0):
+				print(f"{label} -> {{{' '.join(out)}}}")
+		print("}")
 
 	elif sys.argv[1] == 'essential':
 		visited = set()
