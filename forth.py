@@ -17,7 +17,7 @@ C_{label}:""")
 
 def print_asm_word(label, name, code, immediate):
 	head(label, name,  immediate)
-	print(f"	.WORD	2+$			;Vector to code")
+	print(f"	.WORD	2+$", end='')
 	print(code)
 
 def find(prefix, word):
@@ -1566,50 +1566,40 @@ S_END1:
 	.WORD	C_QUIT
 """)
 
-word("WARM:warm", ": lit WORD1 lit S0 lit START_TABLE-WORD1 cmove abort")
+word("WARM:warm", """:
+lit WORD1
+lit S0
+lit START_TABLE-WORD1
+cmove
+abort""")
 
 verbatim("""
 X_COLD:
-	LD	HL,START_TABLE	        ;Copy table to ram
-	LD	DE,FLAST		        ;Where the table's going
+	LD	HL,START_TABLE		;Copy table to ram
+	LD	DE,FLAST		;Where the table's going
 	LD	BC,NEXTS2-START_TABLE	;Bytes to copy
-	LDIR				   ;
-	LD	HL,W_TASK		   ; Copy last word to ram -- need to update when creating a NEW WORD
-	LD	DE,VOCAB_BASE	   ; Where it's going
-	LD	BC,W_TASKEND-W_TASK ;Bytes to copy
-	LDIR				   ;
-	LD	BC,FIRSTWORD	   ;BC to first forth word
+	LDIR				;
+	LD	HL,W_TASK		; Copy last word to ram -- need to update when creating a NEW WORD
+	LD	DE,VOCAB_BASE		; Where it's going
+	LD	BC,W_TASKEND-W_TASK	;Bytes to copy
+	LDIR				;
+	LD	BC,FIRSTWORD		;BC to first forth word
 	LD	HL,(WORD1)		;Get stack pointer
 	LD	SP,HL			;Set it
 	JP	NEXT
 
 FIRSTWORD:
-	.WORD	C_COLD
-
-W_COLD:
-	.set this_word, .
-	.byte 80h+4
-	.ascii "cold"
-	.word last_word_address
-	.set last_word_address, this_word
-	.WORD	X_COLD
-C_COLD:
-	.WORD	E_COLON			;Interpret following word sequence
-.ifdef BLOCKS
-	.WORD	C_EBUFFERS		;Clear pseudo disk buffer
-.endif
-	.WORD	C_ZERO			;Put zero on stack
-	.WORD	C_OFFSET		;Put disk block offset on stack
-	.WORD	C_STORE			;Clear disk block offset
-	.WORD	C_LIT			;Puts next 2 bytes on the stack
-	.WORD	WORD1			;Start of default table
-	.WORD	C_LIT			;Puts next 2 bytes on the stack
-	.WORD	S0			;S0 addr
-	.WORD	C_LIT			;Puts next 2 bytes on the stack
-	.WORD	START_TABLE-WORD1	;Block length on stack (0010h)
-	.WORD	C_CMOVE			;Move block
-	.WORD	C_ABORT
+	.WORD	P_COLD
 """)
+
+word("COLD:cold", """X_COLD
+{P_COLD:} E_COLON
+0 offset !
+lit WORD1
+lit S0
+lit START_TABLE-WORD1
+cmove
+abort""")
 
 # Change single number to double
 asm_word("SINGTODUB:s->d", """
