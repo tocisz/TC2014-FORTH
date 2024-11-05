@@ -133,24 +133,19 @@ MAX_DISK_BLOCKS = (DISK_END-DISK_START)/BLOCK_SIZE
 BACKSPACE:
 	.WORD	0008h			;Backspace chr
 
-WORD1: ; copied by C_WARM to S0 and onward
-	.WORD	DATA_STACK
+INIT_TABLE: ; copied by warm/cold to S0 and onward
+	.WORD	DATA_STACK		;data stack - grows down
 DEF_SYSADDR:
-	.WORD	SYSTEM
-	.WORD	DATA_STACK
+	.WORD	SYSTEM			;return stack - grows down
+	.WORD	DATA_STACK		;TIB - grows up
 	.WORD	001Fh			;Word name length (default 31)
 	.WORD	0000h			;Error message control number
 	.WORD	VOCAB_BASE		;FORGET protection
-	.WORD	VOCAB_BASE+(W_TASKEND-W_TASK) ;Dictionary pointer -- this must be >= length of a last word
-	.WORD	E_FORTH			;Most recently created vocab.
+; following copied only by COLD
+	.WORD	VOCAB_BASE+(W_FORTH_END-W_FORTH) ;Dictionary pointer -- this must be >= length of a last word
+	.WORD	VOCAB_BASE+(E_FORTH-W_FORTH)	;Most recently created vocab, in RAM
 
 START_TABLE:
-	.WORD	2081h
-	.WORD	VOCAB_BASE
-	.WORD	0000h			;goes to FLAST
-	.WORD	2081h
-	.WORD	W_EDITI
-	.WORD	E_FORTH			;goes to ELAST
 	.BYTE	00h			;CRFLAG
 	.BYTE	00h			;Free
 	IN	A,(00h)			;I/O Port input
@@ -174,6 +169,7 @@ START_TABLE:
 	.WORD	DISK_END		;Pseudo disk buf end
 	.WORD	BLOCK_SIZE		;Bytes per block
 	.WORD	BUFFERS			;Buffers per block
+START_TABLE_END:
 
 ; assuming:
 ;      BC -> i
@@ -1244,8 +1240,8 @@ word("HEX:hex", ": lit 16 base ! ;s")
 word("DECIMAL:decimal", ": lit 10 base ! ;s")
 
 word("CCODE:<;code>", ": r> latest pfa cfa ! ;s")
-word("SCCODE:;code", ": ?csp compile <;code> [ task ;s", immediate=True) # why task?
-
+# why no smudge in ;code ? I guess end-code can be used to finalize it
+word("SCCODE:;code", ": ?csp compile <;code> [ ;s", immediate=True)
 word("CREATE:create", ": 0 constant ;s")
 def_word("DOES:does>", ": r> latest pfa ! <;code>", """
 X_DOES:
@@ -1514,10 +1510,10 @@ word("IMMEDIATE:immediate", ": latest lit 64 toggle ;s")
 # but it's strange that when switching from one dictionary to the other this shifted header is shown...
 #  current - where new definitions go
 #  context - where to look-up words for execution
-#  voc-link - points to previous vocabulary(?)
+#  voc-link - points to previous vocabulary definition
 #   supposedly useful for "forget" but it doesn't use it...
 # looks like voc-link gives linear history of created dictionaries
-# while LFA of vocabulary word can create tree structure
+# while vocabularies generally can create tree structure
 word("VOCABULARY:vocabulary", """:
 create
 lit 2081h ,
@@ -1525,21 +1521,15 @@ current @ cfa ,
 here
 voc-link @ ,
 voc-link !
-does> 2+ context !
+does>
+{C_LINK:}
+2+ context !
 ;s""")
 
-verbatim("""
-C_LINK:
-	.WORD	C_2PLUS			;2 plus
-	.WORD	C_FETCH			;Get word from addr on stack
-	.WORD	C_CONTEXT
-	.WORD	C_STORE			;Store word at addr
-	.WORD	C_STOP			;Pop BC from return stack (=next)
-""")
-
-# FLAST+2 contains pointer to NFA of TASK (last ootb FORTH word)
-word("FORTH:forth", "does> C_LINK 2081h FLAST+2 {E_FORTH:} 0000h", immediate=True)
-# TODO how to add "editor" word ootb?
+# newly defined vocabulary has "current @ cfa" stored to vocabulary last defined word
+#  (maybe just "current @ 2-" ...)
+#  (when new word is defined "current @ 2-" points to this second level header that looks like " ")
+# newly defined vocabulary has "voc-link @" in place of as a link to previous voc
 
 word("DEFINITIONS:definitions", ": context @ current ! ;s")
 word("OPENBRKT:(", ": lit 41 word drop ;s", immediate=True)
@@ -1574,30 +1564,32 @@ CF_UABORT:
 S_START1:
 	.ascii	"* Z80 FORTH *"
 S_END1:
-	.WORD	C_FORTH
+	.WORD	VOCAB_BASE+(C_FORTH-W_FORTH) ; C_FORTH in RAM
 	.WORD	C_DEFINITIONS		;Set CURRENT as CONTEXT vocabulary
 	.WORD	C_QUIT
 """)
 
+# this resets: s0 r0 tib width warning fence
+# dp and voc-link are not touched - otherwise we get inconsistent
 word("WARM:warm", """:
-lit WORD1
+lit INIT_TABLE
 lit S0
-lit START_TABLE-WORD1
+lit 12
 cmove
 abort""")
 
 verbatim("""
 X_COLD:
 	LD	HL,START_TABLE		;Copy table to ram
-	LD	DE,FLAST		;Where the table's going
-	LD	BC,NEXTS2-START_TABLE	;Bytes to copy
+	LD	DE,START_TABLE_RAM	;Where the table's going
+	LD	BC,START_TABLE_END-START_TABLE	;Bytes to copy
 	LDIR				;
-	LD	HL,W_TASK		; Copy last word to ram -- need to update when creating a NEW WORD
+	LD	HL,W_FORTH		; Copy last word to ram -- need to update when creating a NEW WORD
 	LD	DE,VOCAB_BASE		; Where it's going
-	LD	BC,W_TASKEND-W_TASK	;Bytes to copy
+	LD	BC,W_FORTH_END-W_FORTH	;Bytes to copy
 	LDIR				;
 	LD	BC,FIRSTWORD		;BC to first forth word
-	LD	HL,(WORD1)		;Get stack pointer
+	LD	HL,(INIT_TABLE)		;Get stack pointer
 	LD	SP,HL			;Set it
 	JP	NEXT
 
@@ -1605,12 +1597,13 @@ FIRSTWORD:
 	.WORD	P_COLD
 """)
 
+# this resets: s0 r0 tib width warning fence dp voc-link
 word("COLD:cold", """X_COLD
 {P_COLD:} E_COLON
 0 offset !
-lit WORD1
+lit INIT_TABLE
 lit S0
-lit START_TABLE-WORD1
+lit START_TABLE-INIT_TABLE
 cmove
 abort""")
 
@@ -1908,6 +1901,7 @@ branch 17
 	<."> {"STACK EMPTY "}
 ;s""")
 
+# e.g.: code nop 0 , next end-code
 word("CODE:code", ": ?exec xxx sp! ;s")
 word("ENDCODE:end-code", ": current @ context ! ?exec ?csp smudge ;s")
 word("NEXT:next", ": lit 195 c, lit NEXT , ;s", immediate=True)
@@ -1935,20 +1929,17 @@ verbatim("""
 .endif
 """)
 
-word("TASK:task", ": ;s")
+# voc-link links to E_FORTH (but copied to RAM)
+# note initial context and current is initialized by "uabort", called from "abort", called from "warm"
+# forth is the last word and is copied to RAM
+word("FORTH:forth", """does>
+C_LINK 2081h VOCAB_BASE
+{E_FORTH:} 0000h
+{W_FORTH_END:}
+""", immediate=True)
 
 verbatim("""
-W_TASKEND:
-
-W_EDITI: ; what is that? looks like a start pointer for editor dictionary
-; currently it contains only one "clear" word... WIP?
-
-.ifdef BLOCKS
-""")
-word("CLEAR:clear", ": dup scr ! block b/buf erase ;s")
-
-verbatim("""
-.endif
+	.zero 38 ; why adding this prevents crash?
 
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code
@@ -2018,13 +2009,14 @@ CHR_WR:					;Character out
 ;==============================================================================
 SYSTEM:					;Start of scratch pad area
 		.space	6		;User bytes -- uninitialized
-; following 16 bytes are initialized by C_WARM
+; following 6 words are initialized by "warm" and "cold"
 S0:		.space	2		;Initial value of the data stack pointer (DATA_STACK)
 R0:		.space	2		;Initial value of the return stack pointer (SYSTEM)
 TIB:		.space	2		;Address of the terminal input buffer (DATA_STACK)
 WIDTH:		.space	2		;Number of letters saved in names (31)
 WARNING:	.space	2		;Error message control number (0)
 FENCE:		.space	2		;Dictionary FORGET protection point (VOCAB_BASE)
+; following 2 words are initialized only by "cold"
 DP:		.space	2		;The dictionary pointer (VOCAB_BASE+0Bh)
 VOC_LINK:	.space	2		;Most recently created vocabulary (E_FORTH)
 ; these are not initialized (?)
@@ -2046,20 +2038,7 @@ CSP:		.space	2		;Check stack pointer
 RHASH:		.space	2		;Location of editor cursor in a text block
 HLD:		.space	2		;Address of current output
 ; START_TABLE is copied here
-/*
-	.WORD   2081h
-	.WORD	VOCAB_BASE (NFA of TASK word)
-	.WORD	0000h			;FLAST
-*/
-FLAST:		.space	6		;FORTH vocabulary data initialised to FORTH
-					;vocabulary
-/*
-	.WORD	2081h
-	.WORD	W_EDITI
-	.WORD	E_FORTH			;ELAST
-*/
-ELAST:		.space	6		;Editor vocabulary data initialised to
-					;EDITOR vocabulary
+START_TABLE_RAM:
 ;	.BYTE	00h			;CRFLAG
 CRFLAG:		.space	1		;Carriage return flag
 ;	.BYTE	00h			;Free
