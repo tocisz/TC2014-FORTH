@@ -324,6 +324,15 @@ X_I2:
 	JP	NEXT
 """)
 
+asm_word("J:j", """
+	LD	HL,(RPP)		;Get return stack pointer
+	INC	HL			;Skip inner loop values
+	INC	HL			;
+	INC	HL			;
+	INC	HL			;
+	JP	X_I2
+""")
+
 asm_word("DIGIT:digit", """
 	POP	HL			;Get base to use
 	POP	DE			;Get char
@@ -1783,7 +1792,7 @@ word("DDOT:d.", ": 0 d.r space ;s")
 word("DOT:.", ": s->d d. ;s")
 word("QUESTION:?", ": @ . ;s")
 word("UDOT:u.", ": 0 d. ;s")
-word("VLIST:words", """:
+word("WORDS:words", """:
 context @ @
 cr
 	dup pfa swap id.
@@ -1855,15 +1864,6 @@ word("2SWAP:2swap", ": rot >r rot r> ;s")
 word("2OVER:2over", ": >r >r 2dup r> r> 2swap ;s")
 
 word("EXIT:exit", ";s")
-
-asm_word("J:j", """
-	LD	HL,(RPP)		;Get return stack pointer
-	INC	HL			;Skip inner loop values
-	INC	HL			;
-	INC	HL			;
-	INC	HL			;
-	JP	X_I2
-""")
 
 word("ROLL:roll", """:
 dup 0 > 0branch 44
