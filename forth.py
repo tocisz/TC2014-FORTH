@@ -99,9 +99,9 @@ verbatim("""; TC2014-FORTH
 ;    Now `forth` is the last word and its copied to RAM, so `current` address can change witin it.
 ; 7. More standard `words` instead of `VLIST`.
 
-INTERRUPTS = 1
-BLOCKS = 1
-NATIVECALL = 1
+;INTERRUPTS = 1
+;BLOCKS = 1
+;NATIVECALL = 1
 
 DATA_STACK:	.EQU	0FD80h		;Data stack grows down
 VOCAB_BASE:	.EQU	0F000h		;Dictionary grows up from here
@@ -1536,7 +1536,7 @@ does>
 word("DEFINITIONS:definitions", ": context @ current ! ;s")
 word("OPENBRKT:(", ": lit 41 word drop ;s", immediate=True)
 
-# This it the last thing ever executed and is the interpreter
+# This is the last thing ever executed and is the interpreter
 # outer loop. This NEVER quits.
 word("QUIT:quit", """:
 {.ifdef BLOCKS}
@@ -1572,7 +1572,7 @@ S_END1:
 """)
 
 # this resets: s0 r0 tib width warning fence
-# dp and voc-link are not touched - otherwise we get inconsistent
+# dp and voc-link are not touched - otherwise system gets inconsistent
 word("WARM:warm", """:
 lit INIT_TABLE
 lit S0
