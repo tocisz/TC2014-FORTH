@@ -47,7 +47,7 @@ variable wordranges
   dup if ." ;s" then
   ?exit
   dup [ ' (;code) cfa ] literal = ( 1 w F )
-  dup if ." ;(code) ..." then
+  dup if ." (;code) ..." then
   ?exit
   dup wordranges @ < ( 1 w F )
   dup if ." OOR1" then
