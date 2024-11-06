@@ -1,8 +1,9 @@
 *.hex
-*.out
 *.o
 *.bin
 *.map
 *.lst
 forth.asm
+forth.rom
+forth.ram
 *.csv

@@ -11,16 +11,16 @@ OBJ_FILES := int32k.o forth.o
 
 all: rom.bin ram.hex
 
-rom.bin: rom.out
+rom.bin: forth.rom
 	$(OBJCOPY) -O binary -j.rom $< $@
 
-ram.hex: ram.out
+ram.hex: forth.ram
 	$(OBJCOPY) --set-start=0 -O ihex -j.ram $< $@
 
-rom.out: $(OBJ_FILES) $(LD_FILES)
+forth.rom: $(OBJ_FILES) $(LD_FILES)
 	$(LINKER) $(LDFLAGS) -T rom.ld -Map=rom.map $(OBJ_FILES) -o $@
 
-ram.out: $(OBJ_FILES) $(LD_FILES)
+forth.ram: $(OBJ_FILES) $(LD_FILES)
 	$(LINKER) $(LDFLAGS) -T ram.ld -Map=ram.map $(OBJ_FILES) -o $@
 
 %.o: %.asm
@@ -30,4 +30,4 @@ forth.asm: forth.py
 	$(PYTHON) $< > $@
 
 clean:
-	rm -f forth.asm *.hex *.out *.o *.bin *.map *.lst
+	rm -f forth.asm forth.rom forth.ram *.hex *.o *.bin *.map *.lst

@@ -47,8 +47,7 @@ def print_word(label, name, words, immediate):
 	head(label, name, immediate)
 	words = re.sub(curly.pattern, curly.eval_curly, words.strip())
 	ws = re.split(r'\s+', words.strip())
-	pfx = 'E' if ws[0] == ':' else 'X'
-	print(f"	.WORD	{find(pfx, ws[0])}")
+	print(f"	.WORD	{find('X', ws[0])}")
 	for w in ws[1:]:
 		m = re.match(curly.pattern, w) 
 		if m:
@@ -60,7 +59,7 @@ def print_word(label, name, words, immediate):
 def print_def_word(label, name, words, code, immediate):
 	head(label, name, immediate)
 	ws = re.split(r'\s+', words)
-	print(f"	.WORD	{find('E', ws[0])}")
+	print(f"	.WORD	{find('X', ws[0])}")
 	for w in ws[1:]:
 		print(f"	.WORD	{find('C', w)}")
 	print(code)
@@ -106,9 +105,9 @@ verbatim(""";-------------------------------------------------------------------
 ; to other Z80 systems. It assumes RAM from 9000h to 0FFFFh and a UART for
 ; communication with the host or VDU.
 
-;INTERRUPTS = 1
-;BLOCKS = 1
-;NATIVECALL = 1
+INTERRUPTS = 1
+BLOCKS = 1
+NATIVECALL = 1
 
 DATA_STACK:	.EQU	0FD80h		;Data stack grows down
 VOCAB_BASE:	.EQU	0F000h		;Dictionary grows up from here
@@ -963,7 +962,7 @@ asm_word("2STORE:2!", """
 # ; i = p + 1/2 -- PFA(0)
 # ; goto(NEXT)
 def_word("COLON::", ": ?exec !csp current @ context ! xxx ] <;code>", """
-E_COLON:
+X_COLON:
 	LD	HL,(RPP)		;Get return stack pointer
 	DEC	HL			;Put BC on return stack
 	LD	(HL),B			;
@@ -1531,7 +1530,7 @@ here
 voc-link @ ,
 voc-link !
 does>
-{C_LINK:}
+{X_VOCABULARY:}
 2+ context !
 ;s""")
 
@@ -1563,7 +1562,7 @@ word("ABORT:abort", ": uabort @ execute ;s")
 
 verbatim("""
 CF_UABORT:
-	.WORD	E_COLON			;Interpret following word sequence
+	.WORD	X_COLON			;Interpret following word sequence
 	.WORD	C_SPSTORE		;Set initial stack pointer value
 	.WORD	C_DECIMAL		;Sets decimal mode
 	.WORD	C_QSTACK		;Error message if stack underflow
@@ -1608,7 +1607,7 @@ FIRSTWORD:
 
 # this resets: s0 r0 tib width warning fence dp voc-link
 word("COLD:cold", """X_COLD
-{P_COLD:} E_COLON
+{P_COLD:} X_COLON
 0 offset !
 lit INIT_TABLE
 lit S0
@@ -1700,7 +1699,7 @@ word("RW:r/w", ": ur/w @ execute ;s")
 verbatim("""
 .endif
 CF_URW:
-	.WORD	E_COLON			;Interpret following word sequence
+	.WORD	X_COLON			;Interpret following word sequence
 	.WORD	C_DROP			;Drop top value from stack
 	.WORD	C_DROP			;Drop top value from stack
 	.WORD	C_DROP			;Drop top value from stack
@@ -1932,8 +1931,8 @@ verbatim("""
 # voc-link links to E_FORTH (but copied to RAM)
 # note initial context and current is initialized by "uabort", called from "abort", called from "warm"
 # forth is the last word and is copied to RAM
-word("FORTH:forth", """does>
-C_LINK 2081h VOCAB_BASE
+word("FORTH:forth", """does> X_VOCABULARY
+2081h VOCAB_BASE
 {E_FORTH:} 0000h
 {W_FORTH_END:}
 """, immediate=True)
