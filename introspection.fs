@@ -12,8 +12,8 @@ variable wordranges
   dup [ ' lit cfa ] literal = ?exit
   dup [ ' branch cfa ] literal = ?exit
   dup [ ' 0branch cfa ] literal = ?exit
-  dup [ ' <loop> cfa ] literal = ?exit
-  dup [ ' <+loop> cfa ] literal = ?exit
+  dup [ ' (loop) cfa ] literal = ?exit
+  dup [ ' (+loop) cfa ] literal = ?exit
   drop 0
 ;
 
@@ -22,7 +22,7 @@ variable wordranges
 : ?asmword dup 2+ swap @ = ;
 : ?userword @ [ ' s0 cfa @ ] literal = ;
 : ?constword @ [ ' 0 cfa @ ] literal = ;
-: ?stringword @ [ ' <."> cfa ] literal = ;
+: ?stringword @ [ ' (.") cfa ] literal = ;
 
 : words2 context @ @ cr ( context gives NFA )
   begin dup id.
@@ -46,8 +46,8 @@ variable wordranges
   dup [ ' ;s cfa ] literal = ( 1 w F )
   dup if ." ;s" then
   ?exit
-  dup [ ' <;code> cfa ] literal = ( 1 w F )
-  dup if ." ;<code> ..." then
+  dup [ ' (;code) cfa ] literal = ( 1 w F )
+  dup if ." ;(code) ..." then
   ?exit
   dup wordranges @ < ( 1 w F )
   dup if ." OOR1" then
@@ -68,7 +68,7 @@ variable lastcompile
 variable isimmediate
 
 ( print word definition )
-: <see> ( pfa - )
+: (see) ( pfa - )
   lastcompile 0 !
   dup cr ." : " nfa ( pfa nfa )
   dup id.
@@ -107,4 +107,4 @@ variable isimmediate
   cr
 ;
 
-: see ' <see> ;
+: see ' (see) ;

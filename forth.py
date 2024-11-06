@@ -249,7 +249,7 @@ asm_word("0BRANCH:0branch", """
 	JP	NEXT			;Continue execution
 """)
 
-asm_word("LLOOP:<loop>", """
+asm_word("LLOOP:(loop)", """
 	LD	DE,0001
 C_ILOOP:
 	LD	HL,(RPP)		;Get return stack pointer
@@ -288,12 +288,12 @@ TEST_LIMIT:
 	JP	NEXT
 """)
 
-asm_word("PLOOP:<+loop>", """
+asm_word("PLOOP:(+loop)", """
 	POP	DE			;Get value from stack
 	JR	C_ILOOP			;Go do loop increment
 """)
 
-asm_word("LDO:<do>", """
+asm_word("LDO:(do)", """
 	LD	HL,(RPP)		;Get return stack pointer
 	DEC	HL			;Add space for two values
 	DEC	HL			;
@@ -354,7 +354,7 @@ NDIGIT:
 	JP	NEXTS1			;Save & NEXT
 """)
 
-asm_word("FIND:<find>", """
+asm_word("FIND:(find)", """
 	POP	DE			;Get pointer to next vocabulary word
 COMPARE:
 	POP	HL			;Copy pointer to word we're looking 4
@@ -961,7 +961,7 @@ asm_word("2STORE:2!", """
 # ; *(--r) = i -- push i to the return stack
 # ; i = p + 1/2 -- PFA(0)
 # ; goto(NEXT)
-def_word("COLON::", ": ?exec !csp current @ context ! xxx ] <;code>", """
+def_word("COLON::", ": ?exec !csp current @ context ! xxx ] (;code)", """
 X_COLON:
 	LD	HL,(RPP)		;Get return stack pointer
 	DEC	HL			;Put BC on return stack
@@ -977,7 +977,7 @@ X_COLON:
 
 word("SEMICOLON:;", ": ?comp ?csp compile ;s smudge [ ;s", immediate=True)
 
-def_word("CONSTANT:constant", ": xxx smudge , <;code>", """
+def_word("CONSTANT:constant", ": xxx smudge , (;code)", """
 X_CONSTANT:				;Put next word on stack
 	INC	DE			;Adjust pointer
 	EX	DE,HL			;Get next word
@@ -988,7 +988,7 @@ X_CONSTANT:				;Put next word on stack
 	JP	NEXT
 """)
 
-def_word("VARIABLE:variable", ": 0 constant <;code>", """
+def_word("VARIABLE:variable", ": 0 constant (;code)", """
 X_VARIABLE:
 	INC	DE		; Interesting that every entrypoint need to adjust it
 				; Couldn't it be adjusted there ADJUST_HERE ?
@@ -997,7 +997,7 @@ X_VARIABLE:
 	JP	NEXT
 """)
 
-def_word("USER:user", ": constant <;code>", """
+def_word("USER:user", ": constant (;code)", """
 X_USER:
 	INC	DE			;Adjust to next word
 	EX	DE,HL
@@ -1247,11 +1247,11 @@ word("SMUDGE:smudge", ": latest lit 32 toggle ;s")
 word("HEX:hex", ": lit 16 base ! ;s")
 word("DECIMAL:decimal", ": lit 10 base ! ;s")
 
-word("CCODE:<;code>", ": r> latest pfa cfa ! ;s")
+word("CCODE:(;code)", ": r> latest pfa cfa ! ;s")
 # why no smudge in ;code ? I guess end-code can be used to finalize it
-word("SCCODE:;code", ": ?csp compile <;code> [ ;s", immediate=True)
+word("SCCODE:;code", ": ?csp compile (;code) [ ;s", immediate=True)
 word("CREATE:create", ": 0 constant ;s")
-def_word("DOES:does>", ": r> latest pfa ! <;code>", """
+def_word("DOES:does>", ": r> latest pfa ! (;code)", """
 X_DOES:
 	LD	HL,(RPP)		;Get return stack pointer
 	DEC	HL			;Push next pointer
@@ -1273,16 +1273,16 @@ word("COUNT:count", ": dup 1+ swap c@ ;s") # Convert string at addr to addr + le
 word("TYPE:type", """:
 ?dup 0branch 24
 	over + swap
-	<do>
+	(do)
 		i c@ emit
-	<loop> -8
+	(loop) -8
 branch 4
 	drop
 ;s""")
 
 word("TRAILING:-trailing", """:
 dup 0
-<do>
+(do)
 	over over
 	+ 1-
 	c@ bl -
@@ -1290,10 +1290,10 @@ dup 0
 		leave
 	branch 4
 		1-
-<loop> -28
+(loop) -28
 ;s""")
 
-word("CQUOTE:<.\">",""":
+word("CQUOTE:(.\")",""":
 r@
 count
 dup 1+
@@ -1305,7 +1305,7 @@ word("QUOTE:.\"", """:
 lit 34
 state @
 0branch 18
-	compile <.">
+	compile (.")
 	word c@ 1+ allot
 branch 8
 	word count type
@@ -1313,7 +1313,7 @@ branch 8
 
 word("EXPECT:expect", """:
 over + over
-<do>
+(do)
 	key dup lit BACKSPACE @ =
 	0branch 42
 		drop
@@ -1335,7 +1335,7 @@ over + over
 		i c!
 		0 i 1+ !
 	emit
-<loop> -98
+(loop) -98
 drop
 ;s""")
 
@@ -1435,19 +1435,19 @@ r> 0branch 4
 word("MFIND:-find", """:
 bl word
 context @ @
-<find>
+(find)
 dup 0= 0branch 10
 	drop here
-	latest <find>
+	latest (find)
 ;s""")
 
-word("CABORT:<abort>", ": abort ;s")
+word("CABORT:(abort)", ": abort ;s")
 
 word("ERROR:error", """:
 warning @ 0<
 0branch 4
-	<abort>
-here count type <."> {"? "} message
+	(abort)
+here count type (.") {"? "} message
 sp!
 {.ifdef BLOCKS}
 blk @ ?dup
@@ -1554,7 +1554,7 @@ word("QUIT:quit", """:
 	query
 	interpret
 	state @ 0= 0branch 7
-		<."> {"OK"}
+		(.") {"OK"}
 branch -25
 """)
 
@@ -1646,8 +1646,8 @@ word("MDIVMOD:m/mod", ": >r 0 r@ u/mod r> swap >r u/mod r> ;s")
 verbatim("""
 .ifdef BLOCKS
 """)
-word("CLINE:<line>", ": >r c/l b/buf */mod r> b/scr * + block + c/l ;s")
-word("DOTLINE:.line", ": <line> -trailing type ;s")
+word("CLINE:(line)", ": >r c/l b/buf */mod r> b/scr * + block + c/l ;s")
+word("DOTLINE:.line", ": (line) -trailing type ;s")
 verbatim("""
 .endif
 """)
@@ -1662,7 +1662,7 @@ warning @ 0branch 30
 		space
 	branch 13
 {.endif}
-		<."> {"MSG # "} .
+		(.") {"MSG # "} .
 ;s""")
 
 asm_word("PORTIN:p@", """
@@ -1715,16 +1715,16 @@ verbatim("""
 """)
 
 word("DUMP:dump", """:
-0 <do>
+0 (do)
 	cr
 	dup 0 lit 5 d.r
 	space
 	lit 4 swap
-	over 0 <do>
+	over 0 (do)
 		dup c@ 3 .r 1+
-	<loop> -12
+	(loop) -12
 	swap
-<+loop> -44
+(+loop) -44
 drop
 cr
 ;s""")
@@ -1768,9 +1768,9 @@ word("BACK:back", ": here - , ;s")
 word("BEGIN:begin", ": ?comp here 1 ;s", immediate=True)
 word("ENDIF:endif", ": ?comp 2 ?pairs here over - swap ! ;s", immediate=True)
 word("THEN:then", ": endif ;s", immediate=True)
-word("DO:do", ": compile <do> here 3 ;s", immediate=True)
-word("LOOP:loop", ": 3 ?pairs compile <loop> back ;s", immediate=True)
-word("PLUSLOOP:+loop", ": 3 ?pairs compile <+loop> back ;s", immediate=True)
+word("DO:do", ": compile (do) here 3 ;s", immediate=True)
+word("LOOP:loop", ": 3 ?pairs compile (loop) back ;s", immediate=True)
+word("PLUSLOOP:+loop", ": 3 ?pairs compile (+loop) back ;s", immediate=True)
 word("UNTIL:until", ": 1 ?pairs compile 0branch back ;s", immediate=True)
 word("END:end", ": until ;s", immediate=True)
 word("AGAIN:again", ": 1 ?pairs compile branch back ;s", immediate=True)
@@ -1778,7 +1778,7 @@ word("REPEAT:repeat", ": >r >r again r> r> 2 - endif ;s", immediate=True)
 word("IF:if", ": compile 0branch here 0 , 2 ;s", immediate=True)
 word("ELSE:else", ": 2 ?pairs compile branch here 0 , swap 2 endif 2 ;s", immediate=True)
 word("WHILE:while", ": if 2+ ;s", immediate=True)
-word("SPACES:spaces", ": 0 max ?dup 0branch 12 0 <do> space <loop> -4 ;s")
+word("SPACES:spaces", ": 0 max ?dup 0branch 12 0 (do) space (loop) -4 ;s")
 
 word("LESSHARP:<#", ": pad hld ! ;s")
 word("SHARPGT:#>", ": drop drop hld @ pad over - ;s")
@@ -1811,27 +1811,27 @@ base @ swap
 decimal
 cr
 dup scr !
-<."> {"SCR # "} .
-lit 16 0 <do>
+(.") {"SCR # "} .
+lit 16 0 (do)
 	cr
 	i lit 0003h .r
 	space
 	i scr @ .line
 	?terminal 0branch 4
 		leave
-<loop> -30
+(loop) -30
 cr
 base !
 ;s""")
 
 word("INDEX:index", """:
-1+ swap <do>
+1+ swap (do)
 	cr
 	i lit 0003h .r
 	space
 	0 i .line
 	?terminal 0branch 4
-		leave <loop>
+		leave (loop)
 -28
 cr
 ;s""")
@@ -1857,7 +1857,7 @@ verbatim("""
 .endif
 """)
 
-word("CPU:.cpu", ': <."> {"Z80 "} ;s')
+word("CPU:.cpu", ': (.") {"Z80 "} ;s')
 
 word("2SWAP:2swap", ": rot >r rot r> ;s")
 word("2OVER:2over", ": >r >r 2dup r> r> 2swap ;s")
@@ -1868,11 +1868,11 @@ word("ROLL:roll", """:
 dup 0 > 0branch 44
 	dup >r
 	pick r>
-	0 swap <do>
+	0 swap (do)
 		sp@ i dup + +
 		dup 2- @
 		swap !
-	lit -1 <+loop> -26
+	lit -1 (+loop) -26
 drop
 ;s""")
 
@@ -1893,11 +1893,11 @@ cr
 depth 0branch 32
 	sp@ 2-
 	s0 @ 2-
-	<do>
+	(do)
 		i @ .
-	lit -2 <+loop> -12
+	lit -2 (+loop) -12
 branch 17
-	<."> {"STACK EMPTY "}
+	(.") {"STACK EMPTY "}
 ;s""")
 
 # e.g.: code nop 0 , next end-code
