@@ -1,30 +1,33 @@
 ASSEMBLER = z80-unknown-coff-as
 LINKER = z80-unknown-coff-ld
 OBJCOPY = z80-unknown-coff-objcopy
+PYTHON = python3
 
 ASFLAGS = -a
 LDFLAGS =
 
 LD_FILES := $(wildcard *.ld)
-SRC_ASM := $(wildcard *.asm)
-OBJ_FILES := $(patsubst %.asm,%.out,$(SRC_ASM))
+OBJ_FILES := int32k.o forth.o
 
 all: rom.bin ram.hex
 
-rom.bin: rom.out
+rom.bin: forth.rom
 	$(OBJCOPY) -O binary -j.rom $< $@
 
-ram.hex: ram.out
-	$(OBJCOPY) -O ihex -j.ram $< $@
+ram.hex: forth.ram
+	$(OBJCOPY) --set-start=0 -O ihex -j.ram $< $@
 
-rom.out: $(OBJ_FILES) $(LD_FILES)
+forth.rom: $(OBJ_FILES) $(LD_FILES)
 	$(LINKER) $(LDFLAGS) -T rom.ld -Map=rom.map $(OBJ_FILES) -o $@
 
-ram.out: $(OBJ_FILES) $(LD_FILES)
+forth.ram: $(OBJ_FILES) $(LD_FILES)
 	$(LINKER) $(LDFLAGS) -T ram.ld -Map=ram.map $(OBJ_FILES) -o $@
 
-%.out: %.asm
+%.o: %.asm
 	$(ASSEMBLER) $(ASFLAGS) $< -o $@ > $<.lst
 
+forth.asm: forth.py
+	$(PYTHON) $< > $@
+
 clean:
-	rm -f *.hex *.out *.bin *.map *.lst
+	rm -f forth.asm forth.rom forth.ram *.hex *.o *.bin *.map *.lst

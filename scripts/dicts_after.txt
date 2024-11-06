@@ -1,0 +1,53 @@
+* Z80 FORTH *
+ OK
+hex OK
+current @ u. F00E OK
+context @ u. F00E OK
+voc-link @ u. F010 OK
+current @ 2- 8 dump
+ F00C  81 20  0 F0
+ F010   0  0  4 64
+OK
+ OK
+vocabulary dict2 OK
+current @ u. F00E OK
+context @ u. F00E OK
+voc-link @ u. F022 OK
+ OK
+dict2 definitions OK
+: test ." OK " ; OK
+current @ u. F020 OK
+context @ u. F020 OK
+voc-link @ u. F022 OK
+current @ 2- 8 dump
+ F01E  81 20 24 F0
+ F022  10 F0 84 74
+OK
+ OK
+' task nfa u. task? MSG # 0
+ OK
+' forth nfa OK
+dup u. F000 OK
+20 dump
+ F000  C5 66 6F 72
+ F004  74 68 C4 99
+ F008  8B 8E DB 99
+ F00C  81 20 12 F0
+ F010   0  0 85 64
+ F014  69 63 74 32
+ F018   0 F0 8B 8E
+ F01C  15 93 81 20
+OK
+ OK
+' dict2 nfa OK
+dup u. F012 OK
+20 dump
+ F012  85 64 69 63
+ F016  74 32  0 F0
+ F01A  8B 8E 15 93
+ F01E  81 20 24 F0
+ F022  10 F0 84 74
+ F026  65 73 74  C
+ F02A  F0 54 89 16
+ F02E  8F  3 4F 4B
+OK
