@@ -82,28 +82,22 @@ def def_word(l_n, words, code, immediate=False):
 	label_of[name] = label
 	chunks.append([print_def_word, label, name, words, code, immediate])
 
-verbatim(""";------------------------------------------------------------------------------
-; FORTH - V0
-;------------------------------------------------------------------------------
-;
-; This is not my source. I did not write this I only made it work on the
-; RC2014 so I would have something the mess around with.
-;
-; I found a simple FORTH buried in a ZIP file on the Z80 info site at ...
-;      http://www.z80.info/zip/z80asm.zip
-;
-; V0 - Included the source from Grant Searles simple 7 chip Z80 computer
-;      from here http://searle.hostei.com/grant/
-;      Modified the CHR_RD and CHR_WR to use the routines from INT32K.ROM
-;      Added a def so I can build as a ROM or RAM
-;      A few renames so I could build it with TASM.
-;
-;------------------------------------------------------------------------------
-
-;------------------------------------------------------------------------------
-; This is an implementation of FORTH for the Z80 that should be easily portable
-; to other Z80 systems. It assumes RAM from 9000h to 0FFFFh and a UART for
-; communication with the host or VDU.
+verbatim("""; TC2014-FORTH
+; 
+; This Forth system is based on an old [fig-Forth derivative](https://github.com/rachel8973/RC2014-FORTH)
+; for Zilog Z80.
+; 
+; I did some modifications I liked:
+; 1. Don't mark end of word name with `+0x80`. You can use Unicode in word names if you like.
+;    It's (still) case sensitive unlike most of Forth systems.
+; 2. All words are lowercase. I find it more aesthetically pleasing.
+; 3. Compiled by a standard GNU Assembler.
+; 4. Python is used as a macro generator. It can generate assembly from word definitions
+;    like `word("FIRST:first", ": ufirst @ ;s")`, which makes reading and modyfiying source code easier.
+; 5. With Python used for generating word definitions it's possible to generate graph of dependencies between words.
+; 6. Cleanup of hacks for defining vocabularies that were used in the Forth system on which it's based.
+;    Now `forth` is the last word and its copied to RAM, so `current` address can change witin it.
+; 7. More standard `words` instead of `VLIST`.
 
 INTERRUPTS = 1
 BLOCKS = 1
