@@ -9,7 +9,9 @@ I did some modifications I liked:
 4. Python is used as a macro generator. It can generate assembly from word definitions like `word("FIRST:first", ": ufirst @ ;s")`, which makes reading and modyfiying source code easier.
 5. With Python used for generating word definitions it's possible to generate graph of dependencies between words.
 6. Cleanup of hacks for defining vocabularies that were used in the Forth system on which it's based. Now `forth` is the last word and its copied to RAM, so `current` address can change witin it.
-7. More standard `words` instead of `VLIST`.
+7. More standard `words` instead of `VLIST`. Added `vocs`.
+8. Restore fig-Forth `create` and `<builds`.
+9. Simpler `sp!` and `rp!`.
 
 ## RAM image
 
