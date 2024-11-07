@@ -538,7 +538,7 @@ NO_MUL:
 
 asm_word("UMOD:u/mod", """
 	LD	HL,0004
-	ADD	HL,SP
+	ADD	HL,SP	;this looks dangerous, but it looks to be above SP
 	LD	E,(HL)
 	LD	(HL),C
 	INC	HL
@@ -641,14 +641,7 @@ asm_word("SPFETCH:sp@", """
 """)
 
 asm_word("SPSTORE:sp!", """
-	LD	HL,(DEF_SYSADDR)	;Get system base addr
-	LD	DE,S0-SYSTEM		;Offset to stack pointer value (0006)
-	ADD	HL,DE			;Add to base addr
-	LD	E,(HL)			;Get SP from ram
-	INC	HL			;
-	LD	D,(HL)			;
-	EX	DE,HL			;Put into HL
-	LD	SP,HL			;Set SP
+	LD	SP,(S0)			;Set SP
 	JP	NEXT
 """)
 
@@ -658,13 +651,7 @@ asm_word("RPFETCH:rp@", """
 """)
 
 asm_word("RPSTORE:rp!", """
-	LD	HL,(DEF_SYSADDR)	;Get system base addr
-	LD	DE,R0-SYSTEM	;Offset to return stack pointer value
-	ADD	HL,DE			;Add to base addr
-	LD	E,(HL)			;Get SP from ram
-	INC	HL			;
-	LD	D,(HL)			;
-	EX	DE,HL			;Put into HL
+	LD	HL,(R0)			;Set SP
 	LD	(RPP),HL		;Set return SP
 	JP	NEXT
 """)
@@ -756,8 +743,9 @@ asm_word("PLUS:+", """
 """)
 
 asm_word("DPLUS:d+", """
-	LD	HL,0006			; offset to low word
+	LD	HL,0006			; offset to low word	
 	ADD	HL,SP			; add stack pointer
+	; Looks OK, but not sure
 	LD	E,(HL)			; get d1 low word low byte
 	LD	(HL),C			; save BC low byte
 	INC	HL			; point to high byte
@@ -1199,6 +1187,7 @@ asm_word("ROT:rot", """
 	JP	NEXTS2			;Save both & NEXT
 """)
 
+# pick with negative value could be BAD
 word("PICK:pick", ": dup + sp@ + @ ;s")
 
 word("SPACE:space", ": bl emit ;s")
@@ -1869,6 +1858,7 @@ word("2OVER:2over", ": >r >r 2dup r> r> 2swap ;s")
 
 word("EXIT:exit", ";s")
 
+# roll with negative value is dangerous
 word("ROLL:roll", """:
 dup 0 > 0branch 44
 	dup >r
@@ -1906,7 +1896,7 @@ branch 17
 ;s""")
 
 # e.g.: code nop 0 , next end-code
-word("CODE:code", ": ?exec create sp! ;s")
+word("CODE:code", ": ?exec create !csp ;s")
 word("ENDCODE:end-code", ": current @ context ! ?exec ?csp smudge ;s")
 word("NEXT:next", ": lit 195 c, lit NEXT , ;s", immediate=True)
 
@@ -1943,7 +1933,7 @@ word("FORTH:forth", """does> X_VOCABULARY
 """, immediate=True)
 
 verbatim("""
-	.zero 2 ; why adding this prevents crash?
+	.zero 0 ; why having some specific value here prevents a crash?
 	; most likely some code somewhere relies on values below top of a stack being kept intact
 	; (and syscalls push/pop return address and HL there)
 	; but how to find it?
