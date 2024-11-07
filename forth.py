@@ -955,7 +955,7 @@ asm_word("2STORE:2!", """
 # ; *(--r) = i -- push i to the return stack
 # ; i = p + 1/2 -- PFA(0)
 # ; goto(NEXT)
-def_word("COLON::", ": ?exec !csp current @ context ! xxx ] (;code)", """
+def_word("COLON::", ": ?exec !csp current @ context ! create ] (;code)", """
 X_COLON:
 	LD	HL,(RPP)		;Get return stack pointer
 	DEC	HL			;Put BC on return stack
@@ -971,7 +971,7 @@ X_COLON:
 
 word("SEMICOLON:;", ": ?comp ?csp compile ;s smudge [ ;s", immediate=True)
 
-def_word("CONSTANT:constant", ": xxx smudge , (;code)", """
+def_word("CONSTANT:constant", ": create smudge , (;code)", """
 X_CONSTANT:				;Put next word on stack
 	INC	DE			;Adjust pointer
 	EX	DE,HL			;Get next word
@@ -1244,7 +1244,6 @@ word("DECIMAL:decimal", ": lit 10 base ! ;s")
 word("CCODE:(;code)", ": r> latest pfa cfa ! ;s")
 # why no smudge in ;code ? I guess end-code can be used to finalize it
 word("SCCODE:;code", ": ?csp compile (;code) [ ;s", immediate=True)
-word("CREATE:create", ": 0 constant ;s")
 def_word("DOES:does>", ": r> latest pfa ! (;code)", """
 X_DOES:
 	LD	HL,(RPP)		;Get return stack pointer
@@ -1452,14 +1451,19 @@ quit""")
 
 word("ID:id.", ": count lit 31 and type space ;s")
 
-word("XXX1:xxx", """:
+# this is "create" from the book, but with "-find" instead of "bl word"
+# that's OK, because -find also does "bl word"
+# this only informs that word is redefined
+word("CREATE:create", """:
 -find 0branch 16
 	drop
 	nfa id.
 	lit 4 message
 	space
 here
-dup c@ width @ min 1+ allot
+dup c@
+width @ min
+1+ allot
 dup lit 160 toggle
 latest ,
 current @ !
@@ -1517,7 +1521,7 @@ word("IMMEDIATE:immediate", ": latest lit 64 toggle ;s")
 # looks like voc-link gives linear history of created dictionaries
 # while vocabularies generally can create tree structure
 word("VOCABULARY:vocabulary", """:
-create
+create 0 , smudge
 lit 2081h ,
 current @ cfa ,
 here
@@ -1902,7 +1906,7 @@ branch 17
 ;s""")
 
 # e.g.: code nop 0 , next end-code
-word("CODE:code", ": ?exec xxx sp! ;s")
+word("CODE:code", ": ?exec create sp! ;s")
 word("ENDCODE:end-code", ": current @ context ! ?exec ?csp smudge ;s")
 word("NEXT:next", ": lit 195 c, lit NEXT , ;s", immediate=True)
 
@@ -1939,15 +1943,14 @@ word("FORTH:forth", """does> X_VOCABULARY
 """, immediate=True)
 
 verbatim("""
-	.zero 38 ; why adding this prevents crash?
+	.zero 2 ; why adding this prevents crash?
+	; most likely some code somewhere relies on values below top of a stack being kept intact
+	; (and syscalls push/pop return address and HL there)
+	; but how to find it?
 
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code
-	PUSH	BC			;Save regs
-	PUSH	DE			;
 	CALL	CHR_RD			;User key in routine
-	POP	DE			;Restore regs
-	POP	BC			;
 	LD	L,A			;Put key on stack
 	LD	H,00h			;
 	JP	NEXTS1			;Save & NEXT
@@ -1956,32 +1959,20 @@ CF_UEMIT:				;Chr from stack to output
 	.WORD	2+$			;Vector to code
 	POP	HL			;Get CHR to output
 	LD	A,L			;Put in A
-	PUSH	BC			;Save regs
-	PUSH	DE			;
 	CALL	CHR_WR			;User output routine
-	POP	DE			;Restore regs
-	POP	BC			;
 	JP	NEXT			;
 
 CF_UCR:					;CR output
 	.WORD	2+$			;Vector to code
-	PUSH	BC			;Save regs
-	PUSH	DE			;Just in case
 	LD	A,0Dh			;Carrage return
 	CALL	CHR_WR			;User output routine
 	LD	A,0Ah			;Line feed
 	CALL	CHR_WR			;User output routine
-	POP	DE			;Get regs back
-	POP	BC			;
 	JP	NEXT			;Next
 
 CF_UQTERMINAL:				;Test for user break
 	.WORD	2+$			;Vector to code
-	PUSH	BC			;Save regs
-	PUSH	DE			;Just in case
 	CALL	BREAKKEY		;User break test routine
-	POP	DE			;Get regs back
-	POP	BC			;
 	LD	H,00h			;Clear H
 	LD	L,A			;Result in L
 	JP	NEXTS1			;Store it & Next
@@ -1992,6 +1983,7 @@ CF_UQTERMINAL:				;Test for user break
 ;==============================================================================
 
 CHR_RD:					;Character in
+	; This call preserves registers with exception of AF (and below stack pointer)
 	RST 10h
 	RET
 
@@ -2000,6 +1992,7 @@ BREAKKEY:
 	RET
 
 CHR_WR:					;Character out
+	; This call preserves registers with exception of AF (and below stack pointer)
 	RST 08h
 	RET
 
