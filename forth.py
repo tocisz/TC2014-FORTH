@@ -1233,6 +1233,7 @@ word("DECIMAL:decimal", ": lit 10 base ! ;s")
 word("CCODE:(;code)", ": r> latest pfa cfa ! ;s")
 # why no smudge in ;code ? I guess end-code can be used to finalize it
 word("SCCODE:;code", ": ?csp compile (;code) [ ;s", immediate=True)
+word("BUILDS:<builds", ": 0 constant ;s")
 def_word("DOES:does>", ": r> latest pfa ! (;code)", """
 X_DOES:
 	LD	HL,(RPP)		;Get return stack pointer
@@ -1510,7 +1511,7 @@ word("IMMEDIATE:immediate", ": latest lit 64 toggle ;s")
 # looks like voc-link gives linear history of created dictionaries
 # while vocabularies generally can create tree structure
 word("VOCABULARY:vocabulary", """:
-create 0 , smudge
+<builds
 lit 2081h ,
 current @ cfa ,
 here
@@ -1933,7 +1934,7 @@ word("FORTH:forth", """does> X_VOCABULARY
 """, immediate=True)
 
 verbatim("""
-	.zero 0 ; why having some specific value here prevents a crash?
+	.zero 3 ; why having some specific value here prevents a crash?
 	; most likely some code somewhere relies on values below top of a stack being kept intact
 	; (and syscalls push/pop return address and HL there)
 	; but how to find it?
