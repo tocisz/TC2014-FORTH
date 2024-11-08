@@ -2,6 +2,7 @@ INCLUDE memory.ld
 
 SECTIONS
 {
+    INCLUDE rc2014.ld
     .rom : {
         *(.bios)
     } > rom
@@ -9,7 +10,7 @@ SECTIONS
         *(.cold .warm)
     } > ram
     .bss : {
-        . = ABSOLUTE(0xFE00);
-        *(.bss)
+        . = ABSOLUTE(SYSTEM_TABLE);
+        *(.system)
     } > ram
 }

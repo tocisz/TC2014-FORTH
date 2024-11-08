@@ -39,12 +39,13 @@ class CurlySubst:
 		self.replacements.append(t)
 		return f"{{{self.i}}}"
 	def string(self,t):
-		return f"""	.BYTE	{len(t)}
-	.ASCII	"{esc(t)}"
-"""
-def print_word(label, name, words, immediate):
+		return f"\t.BYTE\t{len(t)}\n\t.ASCII\t\"{esc(t)}\""
+def print_word(label, name, words, immediate, no_head):
 	curly = CurlySubst()
-	head(label, name, immediate)
+	if no_head:
+		print(f"{label}:")
+	else:
+		head(label, name, immediate)
 	words = re.sub(curly.pattern, curly.eval_curly, words.strip())
 	ws = re.split(r'\s+', words.strip())
 	print(f"	.WORD	{find('X', ws[0])}")
@@ -67,10 +68,10 @@ def print_def_word(label, name, words, code, immediate):
 def verbatim(text):
 	chunks.append([print, text])
 
-def word(l_n, words, immediate=False):
+def word(l_n, words, immediate=False, no_head=False):
 	[label, name] = l_n.split(':',1)
 	label_of[name] = label
-	chunks.append([print_word, label, name, words, immediate])
+	chunks.append([print_word, label, name, words, immediate, no_head])
 
 def asm_word(l_n, code, immediate=False):
 	[label, name] = l_n.split(':',1)
@@ -101,19 +102,10 @@ verbatim("""; TC2014-FORTH
 ; 8. Restore fig-Forth `create` and `<builds`.
 ; 9. Simpler `sp!` and `rp!`.
 
-;INTERRUPTS = 1
-;BLOCKS = 1
-;NATIVECALL = 1
-
-DATA_STACK:	.EQU	0FD80h		;Data stack grows down
-VOCAB_BASE:	.EQU	0F000h		;Dictionary grows up from here
-MASS_STORE:	.EQU	0FEA0h		;Mass storage buffer (default)
-DISK_START:	.EQU	0A000h		;Pseudo disk buffer start
-DISK_END:	.EQU	0F000h		;Pseudo disk buffer end
-BLOCK_SIZE:	.EQU	0200h		;Pseudo disk block size
-BUFFERS:	.EQU	0001h		;Pseudo disk buffers per block
-
-MAX_DISK_BLOCKS = (DISK_END-DISK_START)/BLOCK_SIZE
+; Build options
+INTERRUPTS	= 0;
+BLOCKS		= 0;
+NATIVECALL	= 0;
 
 ; Start of FORTH code
 
@@ -178,7 +170,7 @@ NEXTS2:
 NEXTS1:
 	PUSH	HL
 NEXT:
-.ifdef INTERRUPTS
+.if INTERRUPTS
 	LD	A,(INTFLAG)		;Interrupt flag
 	BIT	7,A			;Check for interrupt
 	JR	Z,NOINT			;No interrupt
@@ -1003,7 +995,7 @@ word("FIRST:first", ": ufirst @ ;s")
 word("LIMIT:limit", ": ulimit @ ;s")
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 word("BBUF:b/buf", ": ub/buf @ ;s")
 word("BSCR:b/scr", ": ub/scr @ ;s")
@@ -1021,7 +1013,7 @@ word("DP:dp", "user DP-SYSTEM")
 word("VOC_LINK:voc-link", "user VOC_LINK-SYSTEM")
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 word("BLK:blk", "user BLK-SYSTEM")
 verbatim("""
@@ -1054,7 +1046,7 @@ word("URW:ur/w", "user URW-SYSTEM")
 word("UABORT:uabort", "user UABORT-SYSTEM")
 
 verbatim("""
-.ifdef NATIVECALL
+.if NATIVECALL
 """)
 word("RAF:raf", "user RAF-SYSTEM")
 word("RBC:rbc", "user RBC-SYSTEM")
@@ -1217,7 +1209,7 @@ word("QPAIRS:?pairs", ": - lit 19 ?error ;s")
 word("WHATSTACK:?csp", ": sp@ csp @ - lit 20 ?error ;s")
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 word("QLOADING:?loading", ": blk @ 0= lit 22 ?error ;s")
 verbatim("""
@@ -1331,7 +1323,7 @@ lit 80 expect
 ;s""")
 
 word("NULL:\0", """:
-{.ifdef BLOCKS}
+{.if BLOCKS}
 blk @
 0branch 40
 	1 blk +!
@@ -1372,7 +1364,7 @@ word("HOLD:hold", ": lit -1 hld +! hld @ c! ;s")
 word("PAD:pad", ": here lit 68 + ;s")
 
 word("WORD:word", """:
-{.ifdef BLOCKS}
+{.if BLOCKS}
 blk @
 0branch 12
 	blk @ block
@@ -1434,7 +1426,7 @@ warning @ 0<
 	(abort)
 here count type (.") {"? "} message
 sp!
-{.ifdef BLOCKS}
+{.if BLOCKS}
 blk @ ?dup
 0branch 8
 	>in @ swap
@@ -1535,7 +1527,7 @@ word("OPENBRKT:(", ": lit 41 word drop ;s", immediate=True)
 # This is the last thing ever executed and is the interpreter
 # outer loop. This NEVER quits.
 word("QUIT:quit", """:
-{.ifdef BLOCKS}
+{.if BLOCKS}
 0 blk !
 {.endif}
 [
@@ -1549,23 +1541,18 @@ branch -25
 """)
 
 word("ABORT:abort", ": uabort @ execute ;s")
+word("FREE:free", ": sp@ here - ;s")
 
-verbatim("""
-CF_UABORT:
-	.WORD	X_COLON			;Interpret following word sequence
-	.WORD	C_SPSTORE		;Set initial stack pointer value
-	.WORD	C_DECIMAL		;Sets decimal mode
-	.WORD	C_QSTACK		;Error message if stack underflow
-	.WORD	C_CR			;Output [CR][LF]
-	.WORD	C_CQUOTE		;Output following string
-	.BYTE	S_END1-S_START1		;String length
-S_START1:
-	.ascii	"* Z80 FORTH *"
-S_END1:
-	.WORD	VOCAB_BASE+(C_FORTH-W_FORTH) ; C_FORTH in RAM
-	.WORD	C_DEFINITIONS		;Set CURRENT as CONTEXT vocabulary
-	.WORD	C_QUIT
-""")
+word("CF_UABORT:", """:
+sp!
+decimal
+?stack
+cr (.") {"* Z80 FORTH *"}
+VOCAB_BASE+(C_FORTH-W_FORTH)
+{	; ^ C_FORTH in RAM}
+definitions
+quit
+""", no_head=True)
 
 # this resets: s0 r0 tib width warning fence
 # dp and voc-link are not touched - otherwise system gets inconsistent
@@ -1634,7 +1621,7 @@ word("TIMESDIV:*/", ": */mod swap drop ;s")
 word("MDIVMOD:m/mod", ": >r 0 r@ u/mod r> swap >r u/mod r> ;s")
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 word("CLINE:(line)", ": >r c/l b/buf */mod r> b/scr * + block + c/l ;s")
 word("DOTLINE:.line", ": (line) -trailing type ;s")
@@ -1643,7 +1630,7 @@ verbatim("""
 """)
 
 word("MESSAGE:message", """:
-{.ifdef BLOCKS}
+{.if BLOCKS}
 warning @ 0branch 30
 	?dup 0branch 20
 		lit 4
@@ -1676,7 +1663,7 @@ asm_word("PORTOUT:p!", """
 """)
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 word("USE:use", "user USE-SYSTEM")
 word("PREV:prev", "user PREV-SYSTEM")
@@ -1688,16 +1675,11 @@ word("BLOCK:block", ": lit 40 mod offset @ + b/buf * first + ;s")
 word("RW:r/w", ": ur/w @ execute ;s")
 verbatim("""
 .endif
-CF_URW:
-	.WORD	X_COLON			;Interpret following word sequence
-	.WORD	C_DROP			;Drop top value from stack
-	.WORD	C_DROP			;Drop top value from stack
-	.WORD	C_DROP			;Drop top value from stack
-	.WORD	C_STOP			;Pop BC from return stack (=next)
 """)
+word("CF_URW:", ": drop drop drop ;s", no_head=True)
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 word("FLUSH:flush", ": ;s")
 verbatim("""
@@ -1720,7 +1702,7 @@ cr
 ;s""")
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 word("LOAD:load", """:
 blk @ >r
@@ -1800,7 +1782,7 @@ dup 0= 0branch -24
 ;s""")
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 
 word("LIST:list", """:
@@ -1836,7 +1818,7 @@ cr
 verbatim("""
 .endif
 
-.ifdef INTERRUPTS
+.if INTERRUPTS
 """)
 def_word("INT:;int", ": ?csp compile X_INT [ smudge ;s", """
 X_INT:
@@ -1904,7 +1886,7 @@ word("ENDCODE:end-code", ": current @ context ! ?exec ?csp smudge ;s")
 word("NEXT:next", ": lit 195 c, lit NEXT , ;s", immediate=True)
 
 verbatim("""
-.ifdef BLOCKS
+.if BLOCKS
 """)
 word("LLOAD:lload", """:
 block

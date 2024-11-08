@@ -2,15 +2,16 @@ INCLUDE memory.ld
 
 SECTIONS
 {
+    INCLUDE rc2014.ld
     .rom : {
         *(.bios)
-        . = ABSOLUTE(0x0150);
+        . = ABSOLUTE(COLD_START);
         *(.cold)
-        . = ABSOLUTE(0x0153);
+        . = ABSOLUTE(WARM_START);
         *(.warm)
     } > rom
     .ram : {
-        . = ABSOLUTE(0xFE00);
-        *(.bss)
+        . = ABSOLUTE(SYSTEM_TABLE);
+        *(.system)
     } > ram
 }
