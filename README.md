@@ -16,4 +16,3 @@ I did some modifications I liked:
 ## RAM image
 
 RAM image has base address `0x8400` and can be loaded by SCM or HLOAD enabled BASIC for RC2014.
-In this version `SYSTEM` table is moved to `0xFA00` not to collide with RAM memory reserved by SCM.

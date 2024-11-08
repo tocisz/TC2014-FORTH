@@ -9,10 +9,7 @@ SECTIONS
         *(.cold .warm)
     } > ram
     .bss : {
-        . = ABSOLUTE(0xFA00);
+        . = ABSOLUTE(0xFE00);
         *(.bss)
     } > ram
-    .scmon : { /* reserved for SCM */
-        . = ABSOLUTE(0xFC00);
-    }
 }
