@@ -1771,10 +1771,10 @@ word("UDOT:u.", ": 0 d. ;s")
 word("WORDS:words", """:
 context @ @
 cr
-	dup pfa swap id.
-	lfa @
+	dup id.
+	pfa lfa @
 	dup 0= ?terminal or
-0branch -22
+0branch -20
 drop
 cr
 ;s""")
@@ -1923,7 +1923,7 @@ word("FORTH:forth", """does> X_VOCABULARY
 """, immediate=True)
 
 verbatim("""
-	.zero 0 ; why having some specific value here prevents a crash?
+	.zero 1 ; why having some specific value here prevents a crash?
 	; most likely some code somewhere relies on values below top of a stack being kept intact
 	; (and syscalls push/pop return address and HL there)
 	; but how to find it?
