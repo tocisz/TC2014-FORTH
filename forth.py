@@ -107,15 +107,13 @@ INTERRUPTS	= 0;
 BLOCKS		= 0;
 NATIVECALL	= 0;
 
-; Start of FORTH code
-
 .section .cold
 
 	JP	X_COLD
 
 .section .warm
 
-	JP	C_WARM
+	JP	X_COLD
 
 BACKSPACE:
 	.WORD	0008h			;Backspace chr
