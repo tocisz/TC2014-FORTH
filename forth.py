@@ -103,9 +103,15 @@ verbatim("""; TC2014-FORTH
 ; 9. Simpler `sp!` and `rp!`.
 
 ; Build options
+.ifnotdef INTERRUPTS
 INTERRUPTS	= 0;
+.endif
+.ifnotdef BLOCKS
 BLOCKS		= 0;
+.endif
+.ifnotdef NATIVECALL
 NATIVECALL	= 0;
+.endif
 
 .section .cold
 
