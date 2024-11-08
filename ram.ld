@@ -2,10 +2,7 @@ INCLUDE memory.ld
 
 SECTIONS
 {
-    INCLUDE rc2014.ld
-    .rom : {
-        *(.bios)
-    } > rom
+    INCLUDE RC2014.ld
     .ram : {
         *(.cold .warm)
     } > ram

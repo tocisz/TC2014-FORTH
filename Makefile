@@ -20,8 +20,8 @@ ram.hex: forth.ram
 forth.rom: $(OBJ_FILES) $(LD_FILES)
 	$(LINKER) $(LDFLAGS) -T rom.ld -Map=rom.map $(OBJ_FILES) -o $@
 
-forth.ram: $(OBJ_FILES) $(LD_FILES)
-	$(LINKER) $(LDFLAGS) -T ram.ld -Map=ram.map $(OBJ_FILES) -o $@
+forth.ram: forth.o $(LD_FILES)
+	$(LINKER) $(LDFLAGS) -T ram.ld -Map=ram.map forth.o -o $@
 
 %.o: %.asm
 	$(ASSEMBLER) $(ASFLAGS) $< -o $@ > $<.lst

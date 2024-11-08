@@ -2,7 +2,7 @@ INCLUDE memory.ld
 
 SECTIONS
 {
-    INCLUDE rc2014.ld
+    INCLUDE RC2014.ld
     .rom : {
         *(.bios)
         . = ABSOLUTE(COLD_START);
