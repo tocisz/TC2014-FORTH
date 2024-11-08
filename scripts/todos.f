@@ -9,7 +9,6 @@ todo.dict definitions ( can I switch it back? )
 does>
 	dup c@ if ." [x] " else ." [ ] " then
 	1+ count type cr
-[ forth ]
 ;
 
 ( checks/unchecks given todo )
