@@ -1546,6 +1546,7 @@ sp!
 decimal
 ?stack
 cr (.") {"* Z80 FORTH *"}
+cr free lit 5 .r (.") {" bytes free"}
 VOCAB_BASE+(C_FORTH-W_FORTH)
 {	; ^ C_FORTH in RAM}
 definitions
@@ -1916,7 +1917,7 @@ word("FORTH:forth", """does> X_VOCABULARY
 """, immediate=True)
 
 verbatim("""
-	.zero 3 ; why having some specific value here prevents a crash?
+	.zero 0 ; why having some specific value here prevents a crash?
 	; most likely some code somewhere relies on values below top of a stack being kept intact
 	; (and syscalls push/pop return address and HL there)
 	; but how to find it?
