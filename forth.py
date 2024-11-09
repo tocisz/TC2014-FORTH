@@ -1498,16 +1498,18 @@ branch -62
 
 word("IMMEDIATE:immediate", ": latest lit 64 toggle ;s")
 
-# this creates a word that represents vocabulary
-# this word looks like it has double header 1. word header 2. dictionary header (with " " for a name)
-# one links to previous word, second one to previous dictionary
-# but it's strange that when switching from one dictionary to the other this shifted header is shown...
+# This creates a word that represents vocabulary.
+# This word looks like it has double header 1. word header 2. vocabulary header (with " " for a name).
+# One links to previous word, second one to previous vocabulary.
+# LFA of a first word in newly created vocabulary points to this "inner word" of the parent vocabulary.
+# "inner word" LFA is always updated to point to the last word of the vocabulary (and voc-link points there).
+# So when finding a word and switching from child vocabulary to parent vocabulary it starts wuith last word
+# of a parent vocabulary.
 #  current - where new definitions go
 #  context - where to look-up words for execution
 #  voc-link - points to previous vocabulary definition
-#   supposedly useful for "forget" but it doesn't use it...
-# looks like voc-link gives linear history of created dictionaries
-# while vocabularies generally can create tree structure
+# voc-link gives linear history of created vocabularies,
+# while vocabularies generally can create tree structure.
 word("VOCABULARY:vocabulary", """:
 <builds
 lit 2081h ,
