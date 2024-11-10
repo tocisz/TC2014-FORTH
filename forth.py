@@ -121,9 +121,6 @@ NATIVECALL	= 0;
 
 	JP	X_COLD
 
-BACKSPACE:
-	.WORD	0008h			;Backspace chr
-
 INIT_TABLE: ; copied by warm/cold to S0 and onward
 	.WORD	DATA_STACK		;data stack - grows down
 DEF_SYSADDR:
@@ -480,7 +477,7 @@ asm_word("KEY:key", """
 
 word("TERMINAL:?terminal", ": u?terminal @ execute ;s")
 word("CR:cr", ": ucr @ execute ;s")
-word("CLS:cls", ": lit 000Ch emit ;s") 
+word("CLS:cls", ": lit CS emit ;s") 
 
 asm_word("CMOVE:cmove", """
 	LD	L,C			;Save BC for now
@@ -1295,7 +1292,7 @@ branch 8
 word("EXPECT:expect", """:
 over + over
 (do)
-	key dup lit BACKSPACE @ =
+	key dup lit BKSP =
 	0branch 42
 		drop
 		dup i =
@@ -1303,11 +1300,11 @@ over + over
 		2 - +
 		>r
 		0branch 10
-			lit 7
+			lit BEL
 		branch 6
-			lit 8
+			lit BKSP
 	branch 40
-		dup lit 13 =
+		dup lit CR =
 		0branch 14
 			leave
 			drop bl 0
@@ -1316,7 +1313,7 @@ over + over
 		i c!
 		0 i 1+ !
 	emit
-(loop) -98
+(loop) -96
 drop
 ;s""")
 
@@ -1946,9 +1943,9 @@ CF_UEMIT:				;Chr from stack to output
 
 CF_UCR:					;CR output
 	.WORD	2+$			;Vector to code
-	LD	A,0Dh			;Carrage return
+	LD	A, CR			;Carrage return
 	CALL	CHR_WR			;User output routine
-	LD	A,0Ah			;Line feed
+	LD	A, LF			;Line feed
 	CALL	CHR_WR			;User output routine
 	JP	NEXT			;Next
 
