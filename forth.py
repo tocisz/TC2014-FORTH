@@ -1783,6 +1783,7 @@ voc-link @
 	dup lit 11 - lit -1 traverse id.
 	@
 dup 0= 0branch -24
+drop
 ;s""")
 
 verbatim("""
