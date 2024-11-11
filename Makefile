@@ -10,7 +10,7 @@ LD_FILES := $(wildcard *.ld)
 OBJ_FILES := forth.o const.o
 OBJ_FILES_ROM := int32k.o $(OBJ_FILES)
 
-all: rom.bin ram.hex
+all: rom.bin ram.hex tools
 
 rom.bin: forth.rom
 	$(OBJCOPY) -O binary -j.rom $< $@
@@ -30,5 +30,13 @@ forth.ram: $(OBJ_FILES) $(LD_FILES)
 forth.asm: forth.py
 	$(PYTHON) $< > $@
 
-clean:
+clean: tools_clean
 	rm -f forth.asm forth.rom forth.ram *.hex *.o *.bin *.map *.lst
+
+tools:
+	$(MAKE) -C tools
+
+tools_clean:
+	$(MAKE) -C tools clean
+
+.PHONY: all clean tools tools_clean

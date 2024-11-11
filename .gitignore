@@ -7,3 +7,5 @@ forth.asm
 forth.rom
 forth.ram
 *.csv
+*.txt
+tools/slowcat

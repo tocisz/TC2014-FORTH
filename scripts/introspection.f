@@ -49,12 +49,12 @@ variable wordranges
   dup [ ' (;code) cfa ] literal = ( 1 w F )
   dup if ." (;code) ..." then
   ?exit
-  dup wordranges @ < ( 1 w F )
+  dup wordranges @ u< ( 1 w F )
   dup if ." OOR1" then
   ?exit
-  dup wordranges 2+ @ > ( 1 w F )
+  dup wordranges 2+ @ swap u< ( 1 w F )
   swap ( 1 F1 w )
-  wordranges 4 + @ < ( 1 F1 F2 )
+  wordranges 4 + @ u< ( 1 F1 F2 )
   and dup ( 1 F F )
   dup if ." OOR2" then
   ?exit
