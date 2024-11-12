@@ -472,7 +472,7 @@ word("EMIT:emit", ": uemit @ execute 1 out +! ;s")
 
 asm_word("KEY:key", """
 	LD	HL,(UKEY)		;Get the vector
-	JP	(HL)			;Jump to it
+	JP	NEXTADDR		;Execute
 """)
 
 word("TERMINAL:?terminal", ": u?terminal @ execute ;s")
@@ -1923,11 +1923,6 @@ word("FORTH:forth", """does> X_VOCABULARY
 """, immediate=True)
 
 verbatim("""
-	.zero 1 ; why having some specific value here prevents a crash?
-	; most likely some code somewhere relies on values below top of a stack being kept intact
-	; (and syscalls push/pop return address and HL there)
-	; but how to find it?
-
 CF_UKEY:				;Get key onto stack
 	.WORD	2+$			;Vector to code
 	CALL	CHR_RD			;User key in routine
