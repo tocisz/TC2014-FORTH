@@ -140,7 +140,6 @@ START_TABLE:
 	RET				;routine
 	OUT	(00h),A			;I/O Port output
 	RET				;routine
-	.WORD	SYSTEM 			;Return stack pointer
 	.WORD	MASS_STORE		;Mass storage buffer to use
 	.WORD	MASS_STORE		;Storage buffer just used
 	.BYTE	00h			;Interrupt flag
@@ -161,7 +160,7 @@ START_TABLE_END:
 
 ; assuming:
 ;      BC -> i
-;   (RPP) -> r
+;      IX -> r
 ;      DE -> p
 ;
 ; p = *i + 1/2 -- half way between CFA and PFA
@@ -241,37 +240,28 @@ asm_word("0BRANCH:0branch", """
 asm_word("LLOOP:(loop)", """
 	LD	DE,0001
 C_ILOOP:
-	LD	HL,(RPP)		;Get return stack pointer
-	LD	A,(HL)			;Add DE to value on return stack
-	ADD	A,E			;
-	LD	(HL),A			;
-	LD	E,A			;
-	INC	HL			;
-	LD	A,(HL)			;
-	ADC	A,D			;
-	LD	(HL),A			;
-	INC	HL			;HL now points to limit value
-	INC	D			;Get DS sign bit
-	DEC	D			;
-	LD	D,A			;Result now in DE
-	JP	M,DECR_LOOP		;Decrement loop so check > limit
-					;otherwies check < limit
-	LD	A,E			;Low byte back
-	SUB	(HL)			;Subtract limit low
-	LD	A,D			;High byte back
-	INC	HL			;Point to limit high
-	SBC	A,(HL)			;Subtract it
-	JR	TEST_LIMIT		;
-DECR_LOOP:
-	LD	A,(HL)			;Get limit low
-	SUB	E			;Subtract index low
-	INC	HL			;Point to limit high
-	LD	A,(HL)			;Get it
-	SBC	A,D			;Subtract index high
-TEST_LIMIT:
+	LD	A,D			; A incerement high
+	EX	DE,HL
+	LD	E,(IX)
+	LD	D,(IX+1)
+	ADD	HL,DE
+	EX	DE,HL			; DE = incremented loop counter
+	LD	(IX),E
+	LD	(IX+1),D		; Update it
+	EX	DE,HL			; HL = incremented loop counter
+	LD	E,(IX+2)
+	LD	D,(IX+3)		; limit in DE
+	OR	A			; Is increment negative? Clear carry BTW
+	JP	P,INCR_LOOP
+	EX	DE,HL			;Reverse comparison for negative increment
+INCR_LOOP:
+	SBC	HL,DE		; i-limit (step positive) [or limit-i (step negative)]
+				; so it's negative before limit is reached
 	JP	M,X_BRANCH		;Not reached limit so jump
-	INC	HL			;Drop index & limit from return stack
-	LD	(RPP),HL		;Save stack pointer
+	INC	IX			;Drop index & limit from return stack
+	INC	IX
+	INC	IX
+	INC	IX
 	INC	BC			;Skip branch offset
 	INC	BC			;
 	JP	NEXT
@@ -283,42 +273,32 @@ asm_word("PLOOP:(+loop)", """
 """)
 
 asm_word("LDO:(do)", """
-	LD	HL,(RPP)		;Get return stack pointer
-	DEC	HL			;Add space for two values
-	DEC	HL			;
-	DEC	HL			;
-	DEC	HL			;
-	LD	(RPP),HL		;Save new stack pointer
-	POP	DE			;Get start value &
-	LD	(HL),E			;put on return stack top
-	INC	HL			;
-	LD	(HL),D			;
-	INC	HL			;
-	POP	DE			;Get end value &
-	LD	(HL),E			;put on return stack - 1
-	INC	HL			;
-	LD	(HL),D			;
+	DEC	IX			;Add space for two values
+	DEC	IX			;
+	DEC	IX			;
+	DEC	IX			;
+	POP	DE
+	LD	(IX),E
+	LD	(IX+1),D
+	POP	DE
+	LD	(IX+2),E
+	LD	(IX+3),D
 	JP	NEXT
 """)
 
 asm_word("I:i", """
 X_I:
-	LD	HL,(RPP)		;Get return stack pointer
-X_I2:
-	LD	E,(HL)			;Get LOOP index off return stack
-	INC	HL			;
-	LD	D,(HL)			;
+	LD	E,(IX)			;Get LOOP index off return stack
+	LD	D,(IX+1)		;
 	PUSH	DE			;Push onto data stack
 	JP	NEXT
 """)
 
 asm_word("J:j", """
-	LD	HL,(RPP)		;Get return stack pointer
-	INC	HL			;Skip inner loop values
-	INC	HL			;
-	INC	HL			;
-	INC	HL			;
-	JP	X_I2
+	LD	E,(IX+4)		;Get LOOP index off return stack
+	LD	D,(IX+5)		;
+	PUSH	DE			;Push onto data stack
+	JP	NEXT
 """)
 
 asm_word("DIGIT:digit", """
@@ -641,13 +621,14 @@ asm_word("SPSTORE:sp!", """
 """)
 
 asm_word("RPFETCH:rp@", """
-	LD	HL,(RPP)		;Return stack pointer into HL
+	LD	E,(IX)
+	LD	D,(IX+1)
+	EX	DE,HL
 	JP	NEXTS1			;Save & NEXT
 """)
 
 asm_word("RPSTORE:rp!", """
-	LD	HL,(R0)			;Set SP
-	LD	(RPP),HL		;Set return SP
+	LD	IX,(R0)
 	JP	NEXT
 """)
 
@@ -660,45 +641,35 @@ asm_word("RPSTORE:rp!", """
 # ; goto(NEXT)
 asm_word("STOP:;s", """
 X_STOP:
-	LD	HL,(RPP)		;Return stack pointer to HL
-	LD	C,(HL)			;Get low byte
-	INC	HL			;
-	LD	B,(HL)			;Get high byte
-	INC	HL			;
-	LD	(RPP),HL		;Save stack pointer
+	LD	C,(IX)			;Get low byte
+	LD	B,(IX+1)		;Get high byte
+	INC	IX			;
+	INC	IX			;
 	JP	NEXT
 """)
 
 asm_word("LEAVE:leave", """
-	LD	HL,(RPP)		;Get return stack pointer
-	LD	E,(HL)			;Get loop limit low
-	INC	HL			;
-	LD	D,(HL)			;Get loop limit high
-	INC	HL			;
-	LD	(HL),E			;Set index low to loop limit
-	INC	HL			;
-	LD	(HL),D			;Set index high to loop limit
+	LD	A,(IX)
+	LD	(IX+2),A
+	LD	A,(IX+1)
+	LD	(IX+3),A
 	JP	NEXT
 """)
 
 asm_word("MOVER:>r", """
 	POP	DE			;Get value
-	LD	HL,(RPP)		;Get return stack pointer
-	DEC	HL			;Set new value
-	LD	(HL),D			;Push high byte onto return stack
-	DEC	HL			;
-	LD	(HL),E			;Push low byte onto return stack
-	LD	(RPP),HL		;Save it
+	DEC	IX
+	DEC	IX
+	LD	(IX),E
+	LD	(IX+1),D
 	JP	NEXT
 """)
 
 asm_word("RMOVE:r>", """
-	LD	HL,(RPP)		;Get return stack pointer
-	LD	E,(HL)			;Pop word off return stack
-	INC	HL			;
-	LD	D,(HL)			;
-	INC	HL			;
-	LD	(RPP),HL		;Save new return stack pointer
+	LD	E,(IX)
+	LD	D,(IX+1)
+	INC	IX
+	INC	IX
 	PUSH	DE			;Push on data stack
 	JP	NEXT
 """)
@@ -939,12 +910,10 @@ asm_word("2STORE:2!", """
 # ; goto(NEXT)
 def_word("COLON::", ": ?exec !csp current @ context ! create ] (;code)", """
 X_COLON:
-	LD	HL,(RPP)		;Get return stack pointer
-	DEC	HL			;Put BC on return stack
-	LD	(HL),B			;
-	DEC	HL			;
-	LD	(HL),C			;
-	LD	(RPP),HL		;Save new pointer
+	DEC	IX
+	DEC	IX
+	LD	(IX),C
+	LD	(IX+1),B
 	INC	DE
 	LD	C,E
 	LD	B,D
@@ -1230,12 +1199,10 @@ word("SCCODE:;code", ": ?csp compile (;code) [ ;s", immediate=True)
 word("BUILDS:<builds", ": 0 constant ;s")
 def_word("DOES:does>", ": r> latest pfa ! (;code)", """
 X_DOES:
-	LD	HL,(RPP)		;Get return stack pointer
-	DEC	HL			;Push next pointer
-	LD	(HL),B			;
-	DEC	HL			;
-	LD	(HL),C			;
-	LD	(RPP),HL
+	DEC	IX
+	DEC	IX
+	LD	(IX),C
+	LD	(IX+1),B
 	INC	DE
 	EX	DE,HL
 	LD	C,(HL)
@@ -1579,6 +1546,7 @@ X_COLD:
 	LD	BC,FIRSTWORD		;BC to first forth word
 	LD	HL,(INIT_TABLE)		;Get stack pointer
 	LD	SP,HL			;Set it
+	LD	IX,SYSTEM		;Set return stack pointer
 	JP	NEXT
 
 FIRSTWORD:
@@ -2020,8 +1988,6 @@ PAT:		.space	3		;I/O port fetch routine (input)
 	RET				;routine
 */
 PST:		.space	3		;I/O port store routine (output)
-;	.WORD	SYSTEM 			;Return stack pointer
-RPP:		.space	2		;Return stack pointer
 ;	.WORD	MASS_STORE		;Mass storage buffer to use
 USE:		.space	2		;Mass storage buffer address to use
 ;	.WORD	MASS_STORE		;Storage buffer just used
