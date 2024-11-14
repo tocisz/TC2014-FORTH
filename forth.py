@@ -477,7 +477,7 @@ asm_word("KEY:key", """
 
 word("TERMINAL:?terminal", ": u?terminal @ execute ;s")
 word("CR:cr", ": ucr @ execute ;s")
-word("CLS:cls", ": lit CS emit ;s") 
+word("CLS:cls", ": lit ESC emit lit 'c' emit ;s") 
 
 asm_word("CMOVE:cmove", """
 	LD	L,C			;Save BC for now
