@@ -685,11 +685,10 @@ asm_word("MOVER:>r", """
 	POP	DE			;Get value
 	LD	HL,(RPP)		;Get return stack pointer
 	DEC	HL			;Set new value
-	DEC	HL			;
-	LD	(RPP),HL		;Save it
-	LD	(HL),E			;Push low byte onto return stack
-	INC	HL			;
 	LD	(HL),D			;Push high byte onto return stack
+	DEC	HL			;
+	LD	(HL),E			;Push low byte onto return stack
+	LD	(RPP),HL		;Save it
 	JP	NEXT
 """)
 
