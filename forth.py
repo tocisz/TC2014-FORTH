@@ -1259,11 +1259,11 @@ word("EXPECT:expect", """:
 over + over
 (do)
 	key dup lit BKSP =
-	0branch 42
+	0branch 40
 		drop
 		dup i =
 		dup r>
-		2 - +
+		2- +
 		>r
 		0branch 10
 			lit BEL
@@ -1279,7 +1279,7 @@ over + over
 		i c!
 		0 i 1+ !
 	emit
-(loop) -96
+(loop) -94
 drop
 ;s""")
 
@@ -1717,7 +1717,7 @@ word("PLUSLOOP:+loop", ": 3 ?pairs compile (+loop) back ;s", immediate=True)
 word("UNTIL:until", ": 1 ?pairs compile 0branch back ;s", immediate=True)
 word("END:end", ": until ;s", immediate=True)
 word("AGAIN:again", ": 1 ?pairs compile branch back ;s", immediate=True)
-word("REPEAT:repeat", ": >r >r again r> r> 2 - endif ;s", immediate=True)
+word("REPEAT:repeat", ": >r >r again r> r> 2- endif ;s", immediate=True)
 word("IF:if", ": compile 0branch here 0 , 2 ;s", immediate=True)
 word("ELSE:else", ": 2 ?pairs compile branch here 0 , swap 2 endif 2 ;s", immediate=True)
 word("WHILE:while", ": if 2+ ;s", immediate=True)
