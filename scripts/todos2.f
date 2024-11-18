@@ -3,7 +3,6 @@
 ;
 
 : head @ ;
-: head@ @ @ ;
 : tail 2+ @ ;
 
 variable todoL
@@ -13,7 +12,7 @@ variable todoN
 	dup c@
 	dup 127 and 3 .r ." . "
 	128 and if ." [x] " else ." [ ] " then
-	1+ count 127 and type cr
+	1+ count type cr
 ;
 
 : todos
