@@ -101,6 +101,8 @@ verbatim("""; TC2014-FORTH
 ; 7. More standard `words` instead of `VLIST`. Added `vocs`.
 ; 8. Restore fig-Forth `create` and `<builds`.
 ; 9. Simpler `sp!` and `rp!`.
+; 10. Linux terminal CLS.
+; 11. Using IX for return stack pointer.
 
 ; Build options
 .ifnotdef INTERRUPTS
@@ -301,6 +303,10 @@ asm_word("J:j", """
 	JP	NEXT
 """)
 
+# Convert the character c according to base n1 to a binary number n2
+# with a true flag on top of stack. If the digit is an invalid character,
+# only a false flag is left on stack.
+# ( c n1 -- n2 tf or ff )
 asm_word("DIGIT:digit", """
 	POP	HL			;Get base to use
 	POP	DE			;Get char
@@ -323,6 +329,10 @@ NDIGIT:
 	JP	NEXTS1			;Save & NEXT
 """)
 
+# Search the dictionary starting at the address on stack for a name
+# matching the text at the address second on stack. Return the parameter field address
+# of the matching name, its length byte, and a boolean true flag on stack for a match.
+# If no match is possible, only a boolean false flag is left on stack.
 asm_word("FIND:(find)", """
 	POP	DE			;Get pointer to next vocabulary word
 COMPARE:
@@ -395,6 +405,12 @@ NO_MATCH:
 	JP	NEXTS1			;Save & NEXT
 """)
 
+# A primitive word to scan the text. From the byte address and the delimiter c,
+# it determines the byte offset to the first non-delimiter character,
+# the offset to the first delimiter after the text string,
+# and the offset to the next character after the delimiter.
+# If the string is delimited by a NUL, the last offset is equal to the previous offset.
+# ( addr c --- addr n1 n2 n3 )
 asm_word("ENCLOSE:enclose", """
 	POP	DE			; get delimiter character
 	POP	HL			; get address 1
@@ -801,6 +817,7 @@ asm_word("2DUP:2dup", """
 	JP	NEXTS2			;Save both & NEXT
 """)
 
+# ( addr n - addr+n addr )
 asm_word("BOUNDS:bounds", """
 	POP	HL			; get n
 	POP	DE			; get addr
@@ -1344,6 +1361,11 @@ lit 34 blanks
 cmove here
 ;s""")
 
+# (NUMBER) is the run-time routine of number conversion.
+# It converts an ASCII text beginning at addr1+1 according to BASE.
+# The result is accumulated with d1 to become d2.
+# addr2 is the address of the first unconvertable digit.
+# ( d1 addr1 --- d2 addr2 )
 word("CONVERT:convert", """:
 	1+ dup >r c@ base @ digit
 	0branch 44
@@ -1356,6 +1378,11 @@ branch -58
 r>
 ;s""")
 
+# NUMBER converts character string at addr with a preceding byte count
+# to signed double integer number, using the current base.
+# If a decimal point is encountered in the text, its position will be given in DPL.
+# If numeric conversion is not possible, issue an error message.
+# ( addr – d )
 word("NUMBER:number", """:
 0 0 rot
 dup 1+ c@
@@ -1575,20 +1602,20 @@ IS_POS:
 	JP	NEXTS2			;Save both & NEXT
 """)
 
-word("PLUSMINUS:+-", ": 0< 0branch 4 negate ;s")
+word("PLUSMINUS:+-", ": 0< 0branch 4 negate ;s") # negate if second arg < 0
 word("DPLUSMINUS:d+-", ": 0< 0branch 4 dnegate ;s")
 word("ABS:abs", ": dup +- ;s")
 word("DABS:dabs", ": dup d+- ;s")
 word("MIN:min", ": 2dup > 0branch 4 swap drop ;s")
 word("MAX:max", ": 2dup < 0branch 4 swap drop ;s")
-word("MTIMES:m*", ": 2dup xor >r abs swap abs u* r> d+- ;s")
-word("MDIV:m/", ": over >r >r dabs r@ abs u/mod r> r@ xor +- swap r> +- swap ;s")
-word("TIMES:*", ": m* drop ;s")
+word("MTIMES:m*", ": 2dup xor >r abs swap abs u* r> d+- ;s") # multiply signed values
+word("MDIV:m/", ": over >r >r dabs r@ abs u/mod r> r@ xor +- swap r> +- swap ;s") # ( d n - d/n )
+word("TIMES:*", ": m* drop ;s") # ( n m - d )
 word("DIVMOD:/mod", ": >r s->d r> m/ ;s")
 word("DIV:/", ": /mod swap drop ;s")
 word("MOD:mod", ": /mod drop ;s")
-word("TIMESDIVMOD:*/mod", ": >r m* r> m/ ;s")
-word("TIMESDIV:*/", ": */mod swap drop ;s")
+word("TIMESDIVMOD:*/mod", ": >r m* r> m/ ;s") # ( n m x - rem(n*m/x) floor(n*m/x) )
+word("TIMESDIV:*/", ": */mod swap drop ;s") # ( n m x - floor(n*m/x) )
 word("MDIVMOD:m/mod", ": >r 0 r@ u/mod r> swap >r u/mod r> ;s")
 
 verbatim("""
