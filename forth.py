@@ -803,6 +803,14 @@ asm_word("SWAP:swap",  """
 	JP	NEXTS1			;Save & NEXT
 """)
 
+asm_word("BSWAP:bswap",  """
+	POP	HL			;Get top value
+	LD	A,L
+	LD	L,H
+	LD	H,A
+	JP	NEXTS1			;Save & NEXT
+""")
+
 asm_word("DUP:dup", """
 	POP	HL			;Get value off stack
 	PUSH	HL			;Copy it back
@@ -1753,8 +1761,15 @@ word("SPACES:spaces", ": 0 max ?dup 0branch 12 0 (do) space (loop) -4 ;s")
 word("LESSHARP:<#", ": pad hld ! ;s")
 word("SHARPGT:#>", ": drop drop hld @ pad over - ;s")
 word("SIGN:sign", ": rot 0< 0branch 8 lit 45 hold ;s")
-word("SHARP:#", ": base @ m/mod rot lit 9 over < 0branch 8 lit 7 + lit 48 + hold ;s")
-word("SHARPS:#s", ": # over over or 0= 0branch -12 ;s")
+word("SHARP:#", """:
+	base @
+	m/mod rot
+	lit 9 over < 0branch 8
+		lit 7 +
+	lit 48 +
+	hold
+;s""")
+word("SHARPS:#s", ": # 2dup or 0= 0branch -10 ;s")
 word("DDOTR:d.r", ": >r swap over dabs <# #s sign #> r> over - spaces type ;s")
 word("DOTR:.r", ": >r s->d r> d.r ;s")
 word("DDOT:d.", ": 0 d.r space ;s")
