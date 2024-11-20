@@ -1922,6 +1922,89 @@ verbatim("""
 .endif
 """)
 
+asm_word("HLOAD:hload","""
+	PUSH	BC
+        ; Load Intel HEX into program memory.
+        ; uses  : af, bc, de, hl
+        ; (C) feilipu
+HLOAD:
+        call HLD_WAIT_COLON     ; wait for first colon and address data
+        jp HLD_READ_DATA        ; now get the first data
+
+HLD_WAIT_COLON: ; #1
+        rst 10h                 ; Rx byte in A
+        cp ':'                  ; wait for ':'
+        jp NZ,HLD_WAIT_COLON
+        ld c,0                  ; reset C to compute checksum
+        call HLD_READ_BYTE      ; read byte count
+        ld b,a                  ; store it in B
+        call HLD_READ_BYTE      ; read upper byte of address
+        ld d,a                  ; store in D
+        call HLD_READ_BYTE      ; read lower byte of address
+        ld e,a                  ; store in E
+        call HLD_READ_BYTE      ; read record type
+        dec a                   ; check if record type is 01 (end of file)
+        jp Z,HLD_END_LOAD
+        inc a                   ; check if record type is 00 (data)
+        jp NZ,TMERR             ; if not, type mismatch error
+        ret
+
+HLD_READ: #0
+        call HLD_WAIT_COLON     ; wait for the next colon and address data
+HLD_READ_DATA:
+        call HLD_READ_BYTE
+        ld (de),a              ; write the byte at the RAM address, increment
+        inc de
+        djnz HLD_READ_DATA      ; if b non zero, loop to get more data
+HLD_READ_CHKSUM:
+        call HLD_READ_BYTE      ; read checksum, but we don't need to keep it
+        ld a,c                  ; lower byte of C checksum should be 0
+        or a
+        jp NZ,HXERR             ; non zero, we have an issue
+        jp HLD_READ
+
+HLD_END_LOAD: ; #1
+        call HLD_READ_BYTE      ; read checksum, but we don't need to keep it
+        ld a,c                  ; lower byte of C checksum should be 0
+        or a
+	pop	bc	;dump return addr
+        jp NZ,HXERR             ; non zero, we have an issue
+	POP	BC
+	LD	HL,0
+	JP	NEXTS1
+
+HLD_READ_BYTE:                  ; returns byte in A, checksum in C
+        call HLD_READ_NIBBLE    ; read the first nibble
+        rlca                    ; shift it left by 4 bits
+        rlca
+        rlca
+        rlca
+        ld l,a                  ; temporarily store the first nibble in L
+        call HLD_READ_NIBBLE    ; get the second (low) nibble
+        or l                    ; assemble two nibbles into one byte in A
+        ld l,a                  ; put assembled byte back into L
+        add a,c                 ; add the byte read to C (for checksum)
+        ld c,a
+        ld a,l
+        ret                     ; return the byte read in A (L = char received too)
+
+HLD_READ_NIBBLE:
+        rst 10h                 ; Rx byte in A
+        sub '0'
+        cp 10
+        ret C                   ; if A<10 just return
+        sub 7                   ; else subtract 'A'-'0' (17) and add 10
+        ret
+
+TMERR:
+	pop	bc	;dump return addr
+HXERR:
+	POP	BC
+	LD	H,0
+	LD	L,A
+	JP	NEXTS1
+""")
+
 # voc-link links to E_FORTH (but copied to RAM)
 # note initial context and current is initialized by "uabort", called from "abort", called from "warm"
 # forth is the last word and is copied to RAM
