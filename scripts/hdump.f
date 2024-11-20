@@ -66,3 +66,22 @@ variable hdumps
 	2drop
 	base !
 ;
+
+: heof
+	3A emit
+	100 0 4h.
+	-1 1h.
+	cr
+;
+
+0 user system
+
+: sysdump
+	A000 here over - hdump
+	system 80 hdump
+	base @
+	hex heof
+	base !
+;
+
+decimal
