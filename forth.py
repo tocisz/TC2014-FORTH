@@ -1927,11 +1927,7 @@ asm_word("HLOAD:hload","""
         ; Load Intel HEX into program memory.
         ; uses  : af, bc, de, hl
         ; (C) feilipu
-HLOAD:
-        call HLD_WAIT_COLON     ; wait for first colon and address data
-        jp HLD_READ_DATA        ; now get the first data
-
-HLD_WAIT_COLON: ; #1
+HLD_WAIT_COLON:
         rst 10h                 ; Rx byte in A
         cp ':'                  ; wait for ':'
         jp NZ,HLD_WAIT_COLON
@@ -1947,10 +1943,6 @@ HLD_WAIT_COLON: ; #1
         jp Z,HLD_END_LOAD
         inc a                   ; check if record type is 00 (data)
         jp NZ,TMERR             ; if not, type mismatch error
-        ret
-
-HLD_READ: #0
-        call HLD_WAIT_COLON     ; wait for the next colon and address data
 HLD_READ_DATA:
         call HLD_READ_BYTE
         ld (de),a              ; write the byte at the RAM address, increment
@@ -1961,16 +1953,20 @@ HLD_READ_CHKSUM:
         ld a,c                  ; lower byte of C checksum should be 0
         or a
         jp NZ,HXERR             ; non zero, we have an issue
-        jp HLD_READ
-
-HLD_END_LOAD: ; #1
+        jp HLD_WAIT_COLON
+HLD_END_LOAD:
         call HLD_READ_BYTE      ; read checksum, but we don't need to keep it
         ld a,c                  ; lower byte of C checksum should be 0
         or a
-	pop	bc	;dump return addr
         jp NZ,HXERR             ; non zero, we have an issue
 	POP	BC
 	LD	HL,0
+	JP	NEXTS1
+TMERR:
+HXERR:
+	POP	BC
+	LD	H,0
+	LD	L,A
 	JP	NEXTS1
 
 HLD_READ_BYTE:                  ; returns byte in A, checksum in C
@@ -1995,14 +1991,6 @@ HLD_READ_NIBBLE:
         ret C                   ; if A<10 just return
         sub 7                   ; else subtract 'A'-'0' (17) and add 10
         ret
-
-TMERR:
-	pop	bc	;dump return addr
-HXERR:
-	POP	BC
-	LD	H,0
-	LD	L,A
-	JP	NEXTS1
 """)
 
 # voc-link links to E_FORTH (but copied to RAM)
