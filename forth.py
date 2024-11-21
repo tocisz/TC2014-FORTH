@@ -114,6 +114,7 @@ BLOCKS		= 0;
 .ifnotdef NATIVECALL
 NATIVECALL	= 0;
 .endif
+SYSDUMP_LOAD	= 1;
 
 .section .cold
 
@@ -1920,7 +1921,76 @@ drop drop
 ;s""")
 verbatim("""
 .endif
+
+.if SYSDUMP_LOAD
 """)
+
+word("HDUMPS:hdumps", "user HDUMPS-SYSTEM")
+word("H1HDOT:1h.", ": 0 <# # # #> type ;s")
+word("H2HDOT:2h.", ": bswap 0 <# # # # # #> type ;s")
+word("H4HDOT:4h.", ": bswap swap bswap swap <# # # # # # # # # #> type ;s")
+word("H2SUM:2sum", ": dup bswap + ;s")
+word("H4SUM:4sum", ": over bswap over bswap + + + ;s")
+
+word("CHDUMP:(hdump)", """:
+dup 3 > 0branch 38
+	swap dup 2@ 4h.
+	dup 2@ 4sum hdumps +!
+	lit 4 +
+	swap lit 4 -
+branch -44
+dup 1 > 0branch 26
+	swap dup @ 2h.
+	dup @ 2sum hdumps +!
+	2+
+	swap 2-
+dup 0> 0branch 22
+	swap dup c@ 1h.
+	dup c@ hdumps +!
+	1+
+	swap
+drop
+;s""")
+
+word("HDUMP:hdump", """:
+base @ rot rot
+hex
+cr
+dup 0> 0branch 84
+	lit 58 emit
+	dup lit 16 min
+	swap over
+	- swap
+	dup 1h.
+	dup hdumps !
+	rot dup bswap 2h.
+	dup 2sum hdumps +!
+	0 1h.
+	swap
+	(hdump)
+	swap
+	lit 256 hdumps @ lit 255 and - 1h.
+	cr
+branch -88
+2drop
+base !
+;s""")
+
+word("HEOF:heof", """:
+lit 58 emit
+lit 256 0 4h.
+lit -1 1h.
+cr
+;s""")
+
+word("SYSDUMP:sysdump", """:
+lit VOCAB_BASE here over - hdump
+dp lit 4 hdump
+base @
+hex
+heof
+base !
+;s""")
 
 asm_word("HLOAD:hload","""
 	PUSH	BC
@@ -1991,6 +2061,11 @@ HLD_READ_NIBBLE:
         ret C                   ; if A<10 just return
         sub 7                   ; else subtract 'A'-'0' (17) and add 10
         ret
+""")
+
+word("SYSLOAD:sysload", ": cr hload 0branch 10 lit 69 emit . cr warm ;s")
+verbatim("""
+.endif
 """)
 
 # voc-link links to E_FORTH (but copied to RAM)
@@ -2148,7 +2223,8 @@ RHL2:		.space	2		;Register HL'
 		.space	1		;User byte
 JPCODE:		.space	1		;JMP code (C3) for word CALL
 JPVECT:		.space	2		;JMP vector for word CALL
-		.space	32		;User bytes
+HDUMPS:		.space	2		;Checksum for hdump
+		.space	30		;User bytes
 
 ;==============================================================================""")
 

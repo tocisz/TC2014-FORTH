@@ -74,11 +74,9 @@ variable hdumps
 	cr
 ;
 
-0 user system
-
 : sysdump
 	A000 here over - hdump
-	system 80 hdump
+	dp 4 hdump
 	base @
 	hex heof
 	base !
