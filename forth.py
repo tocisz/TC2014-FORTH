@@ -472,6 +472,11 @@ asm_word("KEY:key", """
 	JP	NEXTADDR		;Execute
 """)
 
+asm_word("QKEY:?key", """
+	LD	HL,(serRxBufUsed)	;alternatively, could call RST 18
+	JP	NEXTS1
+""")
+
 word("TERMINAL:?terminal", ": u?terminal @ execute ;s")
 word("CR:cr", ": ucr @ execute ;s")
 word("CLS:cls", ": lit ESC emit lit 'c' emit ;s") 
@@ -2118,8 +2123,18 @@ CHR_RD:					;Character in
 	RET
 
 BREAKKEY:
- 	XOR	A			;Wasn't break, or no key, so clear
-	RET
+	LD	A,(serRxBufUsed)
+	RET	Z			;Nothing in buffer, so no break
+	LD	HL,(serRxInPtr)		;Get the pointer to where we poke
+	DEC	L			;This should work with BASIC, with ROM not necessary
+	LD	A,ESC
+	SUB	(HL)			;Was ESC last char?
+	JR	Z,BREAK
+	XOR	A
+	RET				;No break
+BREAK:
+	INC	A			;Make A non-zero
+	RET				;Return
 
 CHR_WR:					;Character out
 	; This call preserves registers with exception of AF (and below stack pointer)

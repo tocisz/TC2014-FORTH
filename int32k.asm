@@ -17,6 +17,9 @@
 ; Full input buffering with incoming data hardware handshaking
 ; Handshake shows full before the buffer is totally filled to allow run-on from the sender
 
+global serRxBufUsed
+global serRxInPtr
+
 SER_BUFSIZE     .EQU     3FH
 SER_FULLSIZE    .EQU     30H
 SER_EMPTYSIZE   .EQU     5
@@ -25,10 +28,10 @@ RTS_HIGH        .EQU     0D6H
 RTS_LOW         .EQU     096H
 
 serBuf          .EQU     $8000
-serInPtr        .EQU     serBuf+SER_BUFSIZE
-serRdPtr        .EQU     serInPtr+2
-serBufUsed      .EQU     serRdPtr+2
-basicStarted    .EQU     serBufUsed+1
+serRxInPtr      .EQU     serBuf+SER_BUFSIZE
+serRdPtr        .EQU     serRxInPtr+2
+serRxBufUsed    .EQU     serRdPtr+2
+basicStarted    .EQU     serRxBufUsed+1
 TEMPSTACK       .EQU     $80ED ; Top of BASIC line input buffer so is "free ram" when BASIC resets
 
 CR              .EQU     0DH
@@ -77,24 +80,24 @@ serialInt:      PUSH     AF
 
                 IN       A,($81)
                 PUSH     AF
-                LD       A,(serBufUsed)
+                LD       A,(serRxBufUsed)
                 CP       SER_BUFSIZE     ; If full then ignore
                 JR       NZ,notFull
                 POP      AF
                 JR       rts0
 
-notFull:        LD       HL,(serInPtr)
+notFull:        LD       HL,(serRxInPtr)
                 INC      HL
                 LD       A,L             ; Only need to check low byte becasuse buffer<256 bytes
                 CP       (serBuf+SER_BUFSIZE) & $FF
                 JR       NZ, notWrap
                 LD       HL,serBuf
-notWrap:        LD       (serInPtr),HL
+notWrap:        LD       (serRxInPtr),HL
                 POP      AF
                 LD       (HL),A
-                LD       A,(serBufUsed)
+                LD       A,(serRxBufUsed)
                 INC      A
-                LD       (serBufUsed),A
+                LD       (serRxBufUsed),A
                 CP       SER_FULLSIZE
                 JR       C,rts0
                 LD       A,RTS_HIGH
@@ -106,7 +109,7 @@ rts0:           POP      HL
 
 ;------------------------------------------------------------------------------
 RXA:
-waitForChar:    LD       A,(serBufUsed)
+waitForChar:    LD       A,(serRxBufUsed)
                 CP       $00
                 JR       Z, waitForChar
                 PUSH     HL
@@ -118,9 +121,9 @@ waitForChar:    LD       A,(serBufUsed)
                 LD       HL,serBuf
 notRdWrap:      DI
                 LD       (serRdPtr),HL
-                LD       A,(serBufUsed)
+                LD       A,(serRxBufUsed)
                 DEC      A
-                LD       (serBufUsed),A
+                LD       (serRxBufUsed),A
                 CP       SER_EMPTYSIZE
                 JR       NC,rts1
                 LD       A,RTS_LOW
@@ -141,7 +144,7 @@ conout1:        IN       A,($80)         ; Status byte
                 RET
 
 ;------------------------------------------------------------------------------
-CKINCHAR:       LD       A,(serBufUsed)
+CKINCHAR:       LD       A,(serRxBufUsed)
                 CP       $0
                 RET
 
@@ -157,10 +160,10 @@ INIT:
                LD        HL,TEMPSTACK    ; Temp stack
                LD        SP,HL           ; Set up a temporary stack
                LD        HL,serBuf
-               LD        (serInPtr),HL
+               LD        (serRxInPtr),HL
                LD        (serRdPtr),HL
                XOR       A               ;0 to accumulator
-               LD        (serBufUsed),A
+               LD        (serRxBufUsed),A
                LD        A,RTS_LOW
                OUT       ($80),A         ; Initialise ACIA
                IM        1

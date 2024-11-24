@@ -2,7 +2,7 @@ INCLUDE memory.ld
 
 SECTIONS
 {
-    INCLUDE RC2014-no_blocks.ld
+    INCLUDE RC2014-with_basic.ld
     .ram : {
         *(.cold .warm)
     } > ram
