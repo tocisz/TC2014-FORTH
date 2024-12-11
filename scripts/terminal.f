@@ -46,10 +46,16 @@
 ;
 : asdf
 	begin
-		?terminal 0= while
 		1000 0 do loop
 		66 emit
-	repeat
+	?terminal until
+;
+: sdfg
+	begin
+		1000 0 do loop
+		65 emit
+		?terminal if exit then
+	again
 ;
 : hr ( char length )
 	0 do
