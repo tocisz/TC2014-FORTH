@@ -1764,6 +1764,8 @@ word("ELSE:else", ": 2 ?pairs compile branch here 0 , swap 2 endif 2 ;s", immedi
 word("WHILE:while", ": if 2+ ;s", immediate=True)
 word("SPACES:spaces", ": 0 max ?dup 0branch 12 0 (do) space (loop) -4 ;s")
 
+word("RECURSE:recurse", ": ?comp latest pfa cfa , ;s", immediate=True)
+
 word("LESSHARP:<#", ": pad hld ! ;s")
 word("SHARPGT:#>", ": drop drop hld @ pad over - ;s")
 word("SIGN:sign", ": rot 0< 0branch 8 lit 45 hold ;s")
