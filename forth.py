@@ -481,6 +481,7 @@ word("TERMINAL:?terminal", ": u?terminal @ execute ;s")
 word("CR:cr", ": ucr @ execute ;s")
 word("CLS:cls", ": lit ESC emit lit 'c' emit ;s") 
 
+# ( src dst n -- )
 asm_word("CMOVE:cmove", """
 	LD	L,C			;Save BC for now
 	LD	H,B			;
@@ -492,6 +493,29 @@ asm_word("CMOVE:cmove", """
 	JR	Z,NO_BYTES		;If 0 length then do nothing
 	LDIR				;Move block
 NO_BYTES:
+	POP	BC			;Get BC back
+	JP	NEXT
+""")
+
+# ( src dst n -- )
+# same as cmove, but start from the right
+asm_word("CMOVER:cmover", """
+	LD	L,C			;Save BC for now
+	LD	H,B			;
+	POP	BC			;Get no. of bytes to move
+	POP	DE			;Get destination address
+	EX	(SP),HL			;Get source address, push BC btw
+	LD	A,B			;Check it's not a 0 length block
+	OR	C			;
+	JR	Z,NO_BYTESR		;If 0 length then do nothing
+	ADD	HL,BC
+	DEC	HL			;Increment HL to end of range
+	EX	DE,HL
+	ADD	HL,BC
+	DEC	HL
+	EX	DE,HL			;Increment DE to end of range
+	LDDR				;Move block (from right end)
+NO_BYTESR:
 	POP	BC			;Get BC back
 	JP	NEXT
 """)
