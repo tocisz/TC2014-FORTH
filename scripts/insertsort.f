@@ -10,7 +10,7 @@
 
 ( find position of a first value greater than val )
 : binsearch ( l r val - addr )
-	>r
+	>r ( R: val)
 	begin
 		2dup swap - [ cell 1+ ] literal <
 		if ( 2 element range )
