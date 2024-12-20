@@ -12,6 +12,10 @@ I did some modifications I liked:
 7. More standard `words` instead of `VLIST`. Added `vocs`.
 8. Restore fig-Forth `create` and `<builds`.
 9. Simpler `sp!` and `rp!`.
+10. Linux terminal CLS.
+11. Using IX for return stack pointer.
+12. `sysdump` and `sysload` to dump and load system state.
+13. Added `rdrop`, `cmove>` and `recurse`.
 
 ## RAM image
 

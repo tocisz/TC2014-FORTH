@@ -103,6 +103,8 @@ verbatim("""; TC2014-FORTH
 ; 9. Simpler `sp!` and `rp!`.
 ; 10. Linux terminal CLS.
 ; 11. Using IX for return stack pointer.
+; 12. `sysdump` and `sysload` to dump and load system state.
+; 13. Added `rdrop`, `cmove>` and `recurse`.
 
 ; Build options
 .ifnotdef INTERRUPTS
@@ -499,7 +501,7 @@ NO_BYTES:
 
 # ( src dst n -- )
 # same as cmove, but start from the right
-asm_word("CMOVER:cmover", """
+asm_word("CMOVER:cmove>", """
 	LD	L,C			;Save BC for now
 	LD	H,B			;
 	POP	BC			;Get no. of bytes to move
@@ -655,6 +657,9 @@ asm_word("XOR:xor", """
 	JP	NEXTS1			;Save & NEXT
 """)
 
+# 2* TODO
+# 2/ TODO
+
 asm_word("SPFETCH:sp@", """
 	LD	HL,0000			;No offset
 	ADD	HL,SP			;Add SP to HL
@@ -717,6 +722,12 @@ asm_word("RMOVE:r>", """
 	INC	IX
 	INC	IX
 	PUSH	DE			;Push on data stack
+	JP	NEXT
+""")
+
+asm_word("RDROP:rdrop", """
+	INC	IX
+	INC	IX
 	JP	NEXT
 """)
 

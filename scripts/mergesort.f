@@ -8,7 +8,7 @@
 		2dup - ( r m l m-l )
 		over dup cell+ ( r m l m-l l l+2 )
 		rot ( r m l l l+2 m-l )
-		cmover ( ranges overlap! )
+		cmove> ( ranges overlap! )
 		r> over ( r m l *mid l )
 		!
 		>r cell+ ( r m+2 )
