@@ -12,7 +12,8 @@
 : binsearch ( l r val - addr )
 	>r
 	begin
-		2dup swap - 3 < if ( 2 element range )
+		2dup swap - [ cell 1+ ] literal <
+		if ( 2 element range )
 			over @ r> > if
 				drop
 			else
@@ -31,7 +32,8 @@
 ;
 
 : insertsort ( addr len -- )
-	over + over 1+ ( left right unsorted )
+	over + over cell+ ( left right unsorted )
+	dup @ ( left right unsorted *unsorted )
 
 ;
 
@@ -40,27 +42,19 @@ variable test
 
 : .array ( addr len -- )
 	0 do
-		dup i cells + @ .
+		dup i cells + ?
 	loop
 	drop
 ;
 
 test 8 .array
 
-test dup 8 cells + -1 binsearch
-@ . ( 0 )
+: test1 >r test dup 8 cells + r> binsearch ;
+-1 test1 ? ( 0 )
+0 test1 ? ( 1 )
+1 test1 ? ( 2 )
+2 test1 ? ( 5 )
+6 test1 ? ( 7 )
 
-test dup 8 cells + 0 binsearch
-@ . ( 1 )
-
-test dup 8 cells + 1 binsearch
-@ . ( 2 )
-
-test dup 8 cells + 2 binsearch
-@ . ( 5 )
-
-test dup 8 cells + 6 binsearch
-@ . ( 7 )
-
-test dup 8 cells + 10 binsearch
+10 test1
 dup test - 2u/ . ( 8 -- out of array )
