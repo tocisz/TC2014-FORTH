@@ -1,16 +1,17 @@
 : cell+ 2+ ;
-: cells 2 * ;
+: cells 2u* ;
 : cell 2 ;
 
 : mid ( l r -- mid )
-	over - 2 / ( l [r-l]/2 )
+	over - 2u/ ( l [r-l]/2 )
 	cell negate and ( round to cell size )
 	+
 ;
 
+( find position of a first value greater than val )
 : binsearch ( l r val - addr )
+	>r
 	begin
-		>r
 		2dup swap - 3 < if ( 2 element range )
 			over @ r> > if
 				drop
@@ -19,14 +20,13 @@
 			then
 			exit
 		then
-		2dup mid
+		2dup mid ( l r mid )
 		dup @ r@ > ( l r mid *mid>val )
 		if
 			swap drop ( l mid )
 		else
 			rot drop swap ( mid r )
 		then
-		r>
 	again
 ;
 
@@ -60,4 +60,4 @@ test dup 8 cells + -1 binsearch
 @ . ( 0 )
 
 test dup 8 cells + 10 binsearch
-dup test - 2 / . ( 8 -- out of array )
+dup test - 2u/ . ( 8 -- out of array )

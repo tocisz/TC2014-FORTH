@@ -105,6 +105,7 @@ verbatim("""; TC2014-FORTH
 ; 11. Using IX for return stack pointer.
 ; 12. `sysdump` and `sysload` to dump and load system state.
 ; 13. Added `rdrop`, `cmove>` and `recurse`.
+; 14. 16-bit unsigned bit shifts: `2u*`, `2u/`.
 
 ; Build options
 .ifnotdef INTERRUPTS
@@ -657,8 +658,18 @@ asm_word("XOR:xor", """
 	JP	NEXTS1			;Save & NEXT
 """)
 
-# 2* TODO
-# 2/ TODO
+asm_word("UTIMES2:2u*", """
+	POP	HL
+	ADD	HL,HL
+	JP	NEXTS1			;Save & NEXT
+""")
+
+asm_word("UDIV2:2u/", """
+	POP	HL
+	SRL	H
+	RR	L
+	JP	NEXTS1			;Save & NEXT
+""")
 
 asm_word("SPFETCH:sp@", """
 	LD	HL,0000			;No offset

@@ -1,5 +1,5 @@
 : cell+ 2+ ;
-: cells 2 * ;
+: cells 2u* ;
 : cell 2 ;
 
 : merge-step ( right mid left -- right mid+ left+ )
@@ -30,7 +30,7 @@
 ;
 
 : mid ( l r -- mid )
-	over - 2 /
+	over - 2u/
 	cell negate and
 	+
 ;
