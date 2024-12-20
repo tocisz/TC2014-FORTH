@@ -47,17 +47,20 @@ variable test
 
 test 8 .array
 
+test dup 8 cells + -1 binsearch
+@ . ( 0 )
+
+test dup 8 cells + 0 binsearch
+@ . ( 1 )
+
 test dup 8 cells + 1 binsearch
 @ . ( 2 )
 
 test dup 8 cells + 2 binsearch
 @ . ( 5 )
 
-test dup 8 cells + 0 binsearch
-@ . ( 1 )
-
-test dup 8 cells + -1 binsearch
-@ . ( 0 )
+test dup 8 cells + 6 binsearch
+@ . ( 7 )
 
 test dup 8 cells + 10 binsearch
 dup test - 2u/ . ( 8 -- out of array )
