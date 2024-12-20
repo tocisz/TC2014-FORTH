@@ -32,9 +32,17 @@
 ;
 
 : insertsort ( addr len -- )
-	over + over cell+ ( left right unsorted )
-	dup @ ( left right unsorted *unsorted )
-
+	1 do
+		dup i cells + ( l r=l+i )
+		2dup dup @ ( l r l r *r )
+		dup >r ( R: *r )
+		binsearch ( l r pos )
+		swap >r ( l pos R: *r r )
+		dup 2dup cell+ swap r> swap - ( l pos pos pos+1 r-pos )
+		cmove> ( l pos )
+		r> swap ! ( l )
+	loop
+	drop
 ;
 
 variable test
@@ -58,3 +66,8 @@ test 8 .array
 
 10 test1
 dup test - 2u/ . ( 8 -- out of array )
+
+variable test2
+8 test2 ! 1 , 5 , 3 , 9 , 0 , 2 , 7 , 6 , 4 ,
+
+test2 10 2dup insertsort cr .array
