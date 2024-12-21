@@ -60,11 +60,16 @@ variable cycleTab
 
 : printCycles
 	62 2 do
-		cr i .
-		cr
-		i dup dup cycles swap .array
+		cr ." n = " i .
+		cr i dup dup cycles swap .array
 		cells negate allot ( free memory )
 	2 +loop
 ;
 
 printCycles
+
+( We could traverse whole permutation )
+( and if it reaches index below current )
+( than it was visited. )
+( But that's probably O(n^2)
+( Can we do better? )
