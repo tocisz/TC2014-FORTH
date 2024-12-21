@@ -29,9 +29,9 @@
 ;
 10 .permutation
 
-: .array ( addr len -- )
+: .carray ( addr len -- )
 	0 do
-		dup i cells + ?
+		dup i + c@ .
 	loop
 	drop
 ;
@@ -40,16 +40,16 @@
 variable cycleCnt
 variable cycleTab
 : cycleTab! ( m idx -- )
-	cells cycleTab @ + !
+	cycleTab @ + c!
 ;
 : cycleTab@ ( i -- m )
-	cells cycleTab @ + @
+	cycleTab @ + c@
 ;
 : cycles ( n - addr )
 	1 cycleCnt !
 	here cycleTab !
-	dup cells allot ( allocate mem )
-	dup cells cycleTab @ swap erase ( fill with zeros )
+	dup allot ( allocate mem )
+	dup cycleTab @ swap erase ( fill with zeros )
 	dup 0 do ( n )
 		i cycleTab@ 0= if ( not visited )
 			i dup ( n start=i i )
@@ -70,8 +70,8 @@ variable cycleTab
 : printCycles
 	62 2 do
 		cr ." n = " i .
-		cr i dup dup cycles swap .array
-		cells negate allot ( free memory )
+		cr i dup dup cycles swap .carray
+		negate allot ( free memory )
 	2 +loop
 ;
 
