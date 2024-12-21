@@ -39,24 +39,25 @@
 ( Let's see how cycles of the permutation look. )
 variable cycleCnt
 variable cycleTab
-variable N
 : cycles ( n - addr )
-	dup N ! ( used by permutation )
 	1 cycleCnt !
 	here cycleTab !
 	dup cells allot ( allocate mem )
 	dup cells cycleTab @ swap erase ( fill with zeros )
-	0 do
+	dup 0 do ( n )
 		cycleTab @ i cells + @ 0= if ( not visited )
-			i dup ( start with i )
+			i dup ( n start=i i )
 			begin
 				dup >r cycleCnt @ cycleTab @ r> cells + ! ( mark as visited )
-				N @ swap permutation ( next number in cycle )
+				( n start i )
+				3 pick swap permutation ( next number in cycle )
+				( n start i' )
 			2dup = until ( back to the start )
 			2drop
 			1 cycleCnt +!
 		then
 	loop
+	drop
 	cycleTab @
 ;
 
