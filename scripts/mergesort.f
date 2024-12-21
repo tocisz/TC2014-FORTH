@@ -1,7 +1,3 @@
-: cell+ 2+ ;
-: cells 2u* ;
-: cell 2 ;
-
 : merge-step ( right mid left -- right mid+ left+ )
 	over @ over @ < if ( *mid < *left )
 		over @ >r ( right mid left r:*mid)

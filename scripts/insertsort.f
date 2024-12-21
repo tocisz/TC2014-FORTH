@@ -1,7 +1,3 @@
-: cell+ 2+ ;
-: cells 2u* ;
-: cell 2 ;
-
 : mid ( l r -- mid )
 	over - 2u/ ( l [r-l]/2 )
 	cell negate and ( round to cell size )

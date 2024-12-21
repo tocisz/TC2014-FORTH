@@ -16,7 +16,7 @@ I did some modifications I liked:
 11. Using IX for return stack pointer.
 12. `sysdump` and `sysload` to dump and load system state.
 13. Added `rdrop`, `cmove>` and `recurse`.
-14. 16-bit unsigned bit shifts: `2u*`, `2u/`.
+14. 16-bit unsigned bit shifts: `2u*`, `2u/` and `cell`, `cell+`, `cells`.
 
 ## RAM image
 

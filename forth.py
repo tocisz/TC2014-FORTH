@@ -105,7 +105,7 @@ verbatim("""; TC2014-FORTH
 ; 11. Using IX for return stack pointer.
 ; 12. `sysdump` and `sysload` to dump and load system state.
 ; 13. Added `rdrop`, `cmove>` and `recurse`.
-; 14. 16-bit unsigned bit shifts: `2u*`, `2u/`.
+; 14. 16-bit unsigned bit shifts: `2u*`, `2u/` and `cell`, `cell+`, `cells`.
 
 ; Build options
 .ifnotdef INTERRUPTS
@@ -658,19 +658,6 @@ asm_word("XOR:xor", """
 	JP	NEXTS1			;Save & NEXT
 """)
 
-asm_word("UTIMES2:2u*", """
-	POP	HL
-	ADD	HL,HL
-	JP	NEXTS1			;Save & NEXT
-""")
-
-asm_word("UDIV2:2u/", """
-	POP	HL
-	SRL	H
-	RR	L
-	JP	NEXTS1			;Save & NEXT
-""")
-
 asm_word("SPFETCH:sp@", """
 	LD	HL,0000			;No offset
 	ADD	HL,SP			;Add SP to HL
@@ -1150,6 +1137,7 @@ asm_word("1PLUS:1+", """
 """)
 
 asm_word("2PLUS:2+", """
+X_2PLUS:
 	POP	HL			; get n
 	INC	HL			; add 1
 	INC	HL			; add 2
@@ -1169,6 +1157,24 @@ X_2MINUS:
 	DEC	HL			; subtract 2
 	JP	NEXTS1			; save result & NEXT
 """)
+
+asm_word("UTIMES2:2u*", """
+X_UTIMES2:
+	POP	HL
+	ADD	HL,HL
+	JP	NEXTS1			;Save & NEXT
+""")
+
+asm_word("UDIV2:2u/", """
+	POP	HL
+	SRL	H
+	RR	L
+	JP	NEXTS1			;Save & NEXT
+""")
+
+word("CELL:cell", "constant 2h")
+word("CELLP:cell+", "2+")
+word("CELLS:cells", "2u*")
 
 word("HERE:here", ": dp @ ;s")
 word("ALLOT:allot", ": dp +! ;s")

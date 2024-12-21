@@ -1,7 +1,3 @@
-: cell+ 2+ ;
-: cells 2u* ;
-: cell 2 ;
-
 ( Suppose we have 2 arrays interleaved in memory )
 ( ABABAB )
 ( and we want to unzip it )
