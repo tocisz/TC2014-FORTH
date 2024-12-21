@@ -9,24 +9,25 @@
 ( of the permutation and shift elements within cycles. )
 ( But each cycle needs to be traversed once. )
 ( How to do this w/o additional memory? )
-variable N
-: permutation ( i - j )
-	dup N @ 2u/ < if
+: permutation ( n i - j )
+	2dup swap 2u/ < if ( i<n/2 )
 		2u*
 	else
-		N @ 1- swap -
+		over 1- swap -
 		2u*
-		N @ 1- swap -
+		over 1- swap -
 	then
+	swap drop
 ;
 
-10 N !
-: .permutation
-	N @ 0 do
-		i permutation .
+: .permutation ( n - )
+	dup
+	0 do
+		dup i permutation .
 	loop
+	drop
 ;
-.permutation
+10 .permutation
 
 : .array ( addr len -- )
 	0 do
@@ -38,6 +39,7 @@ variable N
 ( Let's see how cycles of the permutation look. )
 variable cycleCnt
 variable cycleTab
+variable N
 : cycles ( n - addr )
 	dup N ! ( used by permutation )
 	1 cycleCnt !
@@ -49,7 +51,7 @@ variable cycleTab
 			i dup ( start with i )
 			begin
 				dup >r cycleCnt @ cycleTab @ r> cells + ! ( mark as visited )
-				permutation ( next number in cycle )
+				N @ swap permutation ( next number in cycle )
 			2dup = until ( back to the start )
 			2drop
 			1 cycleCnt +!
