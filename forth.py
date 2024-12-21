@@ -1053,7 +1053,7 @@ verbatim("""
 .endif
 """)
 
-word("TOIN:>in", "user TOIN-SYSTEM")
+word("TOIN:>in", "user TOIN-SYSTEM") # current position in TIB
 word("OUT:out", "user OUT-SYSTEM")
 word("SCR:scr", "user SCR-SYSTEM")
 word("OFFSET:offset", "user OFFSET-SYSTEM")
@@ -1414,6 +1414,8 @@ word("BLANKS:blanks", ": bl fill ;s")
 word("HOLD:hold", ": lit -1 hld +! hld @ c! ;s")
 word("PAD:pad", ": here lit 68 + ;s")
 
+# Read one word from input stream, delimitedby c.
+# ( c - )
 word("WORD:word", """:
 {.if BLOCKS}
 blk @
@@ -1421,10 +1423,11 @@ blk @
 	blk @ block
 branch 6
 {.endif}
-	tib @
->in @ + swap enclose here
-lit 34 blanks
->in +! over - >r r@ here c! + here 1+ r>
+tib @ >in @ +
+swap enclose
+here lit 34 blanks
+>in +!
+over - >r r@ here c! + here 1+ r>
 cmove here
 ;s""")
 
