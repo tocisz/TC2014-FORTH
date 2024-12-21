@@ -1381,6 +1381,7 @@ branch 6
 	r> drop
 ;s""", immediate=True)
 
+# ( addr n byte -- )
 asm_word("FILL:fill", """
 	LD	L,C			;Save BC for now
 	LD	H,B			;
