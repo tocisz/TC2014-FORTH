@@ -61,11 +61,11 @@ variable tab
 ;
 
 : tab@ ( i - dn )
-	4 * tab @ + 2@
+	2u* cells tab @ + 2@
 ;
 
 : tab! ( dn i - )
-	4 * tab @ + 2!
+	2u* cells tab @ + 2!
 ;
 
 variable tmp cell allot
@@ -120,7 +120,7 @@ variable tmp cell allot
 : binsearch2 ( l r val - addr )
 	>r >r ( R: val)
 	begin
-		2dup swap - 5 <
+		2dup swap - [ 2 cells 1+ ] literal <
 		if ( 2 element range )
 			over 2@ r> r> d> if
 				drop
@@ -143,29 +143,33 @@ variable tmp cell allot
 
 : insertsort2 ( addr len -- )
 	1 do
-		dup i 4* + ( l r=l+i )
+		dup i 2u* cells + ( l r=l+i )
 		2dup dup 2@ ( l r l r *r )
 		2dup >r >r ( R: *r )
 		binsearch2 ( l r pos )
 		swap >r ( l pos R: *r r )
-		dup 2dup 4 + swap r> swap - ( l pos pos pos+1 r-pos )
+		dup 2dup [ 2 cells ] literal + swap r> swap -
+		( l pos pos pos+1 r-pos )
 		cmove> ( l pos )
 		r> r> rot 2! ( l )
 	loop
 	drop
 ;
 
-variable distance cell allot
-: compute
-	cr ." Enter data:" cr
+: readData
+	cr ." Enter data:"
 	readNums len ! tab !
+;
+
+variable distance cell allot
+: computeDistance
 	cr ." Unzipping data..."
 	unzip
 	len @ 2u/
 	cr ." Sorting (1/2)..."
 	dup tab @ swap insertsort2
 	cr ." Sorting (2/2)..."
-	dup tab @ over 4* + swap insertsort2
+	dup tab @ over 2u* cells + swap insertsort2
 	cr ." Calculating distance..."
 	0. distance 2!
 	dup 0 do ( hl )
@@ -176,5 +180,15 @@ variable distance cell allot
 	loop
 	drop
 	cr ." Answer is "
-	distance 2@ d.
+	distance 2@ d. cr
 ;
+
+readData
+3   4
+4   3
+2   5
+1   3
+3   9
+3   3
+
+computeDistance ( 11 )
