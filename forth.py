@@ -294,17 +294,23 @@ asm_word("LDO:(do)", """
 
 asm_word("I:i", """
 X_I:
-	LD	E,(IX)			;Get LOOP index off return stack
-	LD	D,(IX+1)		;
-	PUSH	DE			;Push onto data stack
-	JP	NEXT
+	LD	L,(IX)			;Get LOOP index off return stack
+	LD	H,(IX+1)		;
+	JP	NEXTS1
 """)
 
 asm_word("J:j", """
-	LD	E,(IX+4)		;Get LOOP index off return stack
-	LD	D,(IX+5)		;
-	PUSH	DE			;Push onto data stack
-	JP	NEXT
+	LD	L,(IX+4)		;Get LOOP index off return stack
+	LD	H,(IX+5)		;
+	JP	NEXTS1
+""")
+
+asm_word("DOUBLERFETCH:2r@", """
+	LD	E,(IX)
+	LD	D,(IX+1)
+	LD	L,(IX+2)
+	LD	H,(IX+3)
+	JP	NEXTS2
 """)
 
 # Convert the character c according to base n1 to a binary number n2

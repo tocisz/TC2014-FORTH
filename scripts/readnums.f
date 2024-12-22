@@ -35,11 +35,34 @@ variable numBuf
 			dup numBuf c! ( write len )
 			numBuf 1+ swap cmove ( copy it )
 			parseNum
-			drop ( drop high )
-			here cell allot ! ( store low )
+			here [ 2 cells ] literal allot 2! ( store )
 			r> + ( update addr )
 		r> until
 		drop
 	repeat
-	here over - 2u/
+	here over - [ 2 cells ] literal /
 ;
+
+readNums
+3   4
+4   3
+2   5
+1   3
+3   9
+3   3
+
+variable len
+len !
+variable tab
+tab !
+
+: tab@ ( i - dn )
+	4 * tab @ + 2@
+;
+
+: .tab
+	len @ 0 do
+		i tab@ d.
+	loop
+;
+.tab
