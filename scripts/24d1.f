@@ -68,6 +68,12 @@ variable tab
 	2u* cells tab @ + 2!
 ;
 
+: .tab
+	len @ 0 do
+		i tab@ d.
+	loop
+;
+
 variable tmp cell allot
 : cycle  ( start i - )
 	dup tab@ dnegate tmp 2!
