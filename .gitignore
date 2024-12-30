@@ -9,3 +9,4 @@ forth.ram
 *.csv
 *.txt
 tools/slowcat
+scripts/tmp.f

@@ -1,3 +1,19 @@
+: cons ( t h -> addr )
+	here >r , , r>
+;
+
+: head @ ;
+: head@ @ @ ;
+: tail 2+ @ ;
+
+: line! ( addr cnt - addr )
+	here >r
+	c, ,
+	r>
+;
+: line@cnt ( laddr - cnt ) c@ ;
+: line@addr ( laddr - addr ) 1+ @ ;
+
 80 constant bufLen
 variable buf
 bufLen allot
@@ -18,11 +34,13 @@ variable numBuf
 	numBuf number
 ;
 
-: readNums ( - addr cnt )
+( read line of byte precission numbers )
+: readNLine ( - addr cnt | 0 )
 	here
-	begin
-		readLine
-		isEmpty not while
+	readLine
+	isEmpty if
+		drop 0
+	else
 		buf
 		begin
 			32 enclose
@@ -35,34 +53,37 @@ variable numBuf
 			dup numBuf c! ( write len )
 			numBuf 1+ swap cmove ( copy it )
 			parseNum
-			, , ( store )
+			drop c, ( store 8 of 32 bits )
 			r> + ( update addr )
 		r> until
 		drop
+		here over -
+	then
+;
+
+: readNLines ( - laddr )
+	0 ( list terminator )
+	begin
+		readNLine
+		dup while
+		line!
+		cons
 	repeat
-	here over - [ 2 cells ] literal /
+	drop
+;
+
+variable nums
+
+: readNums
+	readNLines
+	nums !
 ;
 
 readNums
-3   4
-4   3
-2   5
-1   3
-3   9
-3   3
+7 6 4 2 1
+1 2 7 8 9
+9 7 6 2 1
+1 3 2 4 5
+8 6 4 4 1
+1 3 6 7 9
 
-variable len
-len !
-variable tab
-tab !
-
-: tab@ ( i - dn )
-	4 * tab @ + 2@
-;
-
-: .tab
-	len @ 0 do
-		i tab@ d.
-	loop
-;
-.tab

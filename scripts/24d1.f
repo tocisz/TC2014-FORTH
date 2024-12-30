@@ -37,7 +37,7 @@ variable tab
 			dup numBuf c! ( write len )
 			numBuf 1+ swap cmove ( copy it )
 			parseNum
-			here [ 2 cells ] literal allot 2! ( store )
+			, , ( store )
 			r> + ( update addr )
 		r> until
 		drop
