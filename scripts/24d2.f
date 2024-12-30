@@ -6,7 +6,8 @@
 : head@ @ @ ;
 : tail 2+ @ ;
 
-: line! ( addr cnt - addr )
+( store line descriptor )
+: line! ( addr cnt - laddr )
 	here >r
 	c, ,
 	r>
@@ -61,7 +62,8 @@ variable numBuf
 	then
 ;
 
-: readNLines ( - laddr )
+( create linked list of line descriptors )
+: readNLines ( - caddr )
 	0 ( list terminator )
 	begin
 		readNLine
