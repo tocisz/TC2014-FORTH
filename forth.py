@@ -675,6 +675,11 @@ asm_word("SPSTORE:sp!", """
 	JP	NEXT
 """)
 
+# TODO this is not correct!
+# use ADD	A,IXH
+# or undocumented
+# 	LD	E,IXH
+#	LD	D,IXL
 asm_word("RPFETCH:rp@", """
 	LD	E,(IX)
 	LD	D,(IX+1)
@@ -703,6 +708,8 @@ X_STOP:
 	JP	NEXT
 """)
 
+# this "leave" is non-standard
+# it's not breaking the loop immediately
 asm_word("LEAVE:leave", """
 	LD	A,(IX)
 	LD	(IX+2),A
