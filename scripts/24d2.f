@@ -15,11 +15,10 @@
 : line@cnt ( laddr - cnt ) c@ ;
 : line@addr ( laddr - addr ) 1+ @ ;
 
-80 constant bufLen
 variable buf
-bufLen allot
+80 allot
 variable numBuf
-16 allot
+12 allot
 
 : readLine ( - )
 	cr buf 80 expect
@@ -81,6 +80,10 @@ variable nums
 	nums !
 ;
 
+( hard case is a problem with first diff )
+( it can be solved by removing 1st or 2nd element )
+( so both cases need to be checked )
+( last row is an example of this )
 readNums
 7 6 4 2 1
 1 2 7 8 9
@@ -88,4 +91,5 @@ readNums
 1 3 2 4 5
 8 6 4 4 1
 1 3 6 7 9
+0 4 3 4 5
 

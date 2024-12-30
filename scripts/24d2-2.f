@@ -71,37 +71,9 @@
 ;
 
 variable problemCnt
-: isSafe ( laddr - t/f )
-	( dup .line)
-	0 problemCnt !
-	dup >r ( laddr R:laddr )
-	line@addr 1+ ( start+1 )
-	c@ b->s ( v0 )
-	( special test when sign is not known )
-	?fail0 ( sgn fail0 )
-	dup problemCnt +!
-	if ( not safe )
-		( cr ." 0 not safe ")
-		drop
-		r@ line@addr 2+ ( start+offset )
-		( retry )
-		c@ b->s ( v )
-		( dup .)
-		?fail0 ( sgn fail0 )
-		dup problemCnt +!
-		if ( not safe )
-			( cr ." 1 not safe")
-			rdrop drop
-			0 exit
-		then
-		( .s)
-		3
-	else
-		2
-	then ( sgn offset )
-	( loop diffs when sign is known )
-	0 swap ( adj=0 )
-	r> ( sgn adj offset laddr )
+variable canRetry
+variable laddr
+: innerLoop ( sgn adj offset laddr - sgn adj' )
 	loopRange ( sgn adj end start+offset )
 	do ( sgn adj )
 		i c@ b->s ( sgn adj v )
@@ -110,6 +82,7 @@ variable problemCnt
 		dup problemCnt +!
 		if ( problem )
 			i c@ b->s
+			." remove " dup .
 		else
 			0
 		then ( sgn adj )
@@ -117,8 +90,69 @@ variable problemCnt
 			leave
 		then
 	loop
-	2drop
-	problemCnt @ 2 <
+;
+: isSafe ( laddr - t/f )
+	dup .line
+	0 problemCnt !
+	0 canRetry !
+	dup laddr ! ( laddr )
+	line@addr 1+ ( start+1 )
+	c@ b->s ( v0 )
+	( special test when sign is not known )
+	?fail0 ( sgn fail0 )
+	dup problemCnt +!
+	if ( not safe )
+		." try remove 1st "
+		drop
+		laddr @ line@addr 2+ ( start+offset )
+		( retry )
+		c@ b->s ( v )
+		( dup .)
+		?fail0 ( sgn fail0 )
+		dup problemCnt +!
+		if ( not safe )
+			." remove 2nd "
+		then
+		( .s)
+		3
+	else
+		2
+	then ( sgn offset )
+	( first possibility: )
+	( no removal or 1st element removed )
+	0 swap ( sgn adj:0 offset )
+	( loop diffs when sign is known )
+	laddr @ ( sgn adj offset laddr )
+	problemCnt @
+	dup 0> if
+		1 canRetry !
+	then
+	2 < if ( sgn adj offset laddr )
+		innerLoop
+	else
+		2drop
+	then ( sgn adj' )
+	2drop ( )
+	cr problemCnt @ . ." problems "
+	problemCnt @ 2 < if
+		1 ( safe )
+	else
+		canRetry @ if
+			cr ." try remove 2nd "
+			( where to find laddr? )
+			laddr @ line@addr dup 1+ ( a0 a1 )
+			c@ b->s ( a0 v1 )
+			swap 2+ c@ b->s ( v1 v2 )
+			over + sgn ( v1 sgn[v1+v2])
+			swap ( sgn adj )
+			2 laddr @ ( sgn adj offset laddr )
+			1 problemCnt !
+			innerLoop
+			2drop
+		then
+		cr problemCnt @ . ." problems "
+		problemCnt @ 2 <
+	then
 ;
 
 variable safeCnt
