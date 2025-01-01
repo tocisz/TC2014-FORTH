@@ -4,7 +4,7 @@ chunks = []
 label_of = dict()
 
 def esc(s):
-	return s.replace('"', r'\042').replace("\0", r'\000')
+	return s.replace("\\", r'\134').replace('"', r'\042').replace("\0", r'\000')
 
 def head(label, name, immediate):
 	print(f"""W_{label}:
@@ -1602,6 +1602,7 @@ does>
 
 word("DEFINITIONS:definitions", ": context @ current ! ;s")
 word("OPENBRKT:(", ": lit 41 word drop ;s", immediate=True)
+word("BCKSLASH:\\", ": 0 word drop ;s", immediate=True)
 
 # This is the last thing ever executed and is the interpreter
 # outer loop. This NEVER quits.
