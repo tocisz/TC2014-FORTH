@@ -6,13 +6,18 @@
 	then
 ;
 
+variable laddr
+: laddrRange ( - end start+1 )
+	laddr @ dup ( laddr laddr )
+	line@addr dup rot ( start start laddr )
+	line@cnt + ( start end )
+	swap 1+ ( end start+1 )
+;
+
 : diffLine ( laddr - )
-	dup >r ( laddr R:laddr )
+	dup laddr !
 	line@addr c@ ( v )
-	r@ line@addr 1+ ( v start+1 )
-	r> line@cnt 1- ( v start+1 cnt-1 )
-	over + swap ( v end start+1 )
-	do
+	laddrRange do
 		i c@ dup ( v v' v' )
 		rot - ( v' v'-v )
 		i c! ( v' )
@@ -36,29 +41,6 @@
 	then
 ;
 
-( this is useful only for first iteration )
-: ?fail0 ( v - sgn t/f )
-	dup sgn ( v sgn )
-	dup 0= ( v sgn t/f )
-	rot abs 3 > ( sgn t/f oor? )
-	or ( sgn t/f )
-;
-
-: ?fail1 ( sgn v - sgn t/f )
-	2dup sgn = not if ( sgn different or 0 )
-		drop
-		1 exit
-	then
-	abs 3 > ( oor? )
-;
-
-: loopRange ( offset laddr - end start+offset )
-	dup >r ( offset laddr R:laddr )
-	line@addr + ( start+offset )
-	r@ line@addr r> line@cnt + ( start+offset end )
-	swap ( end start+offset )
-;
-
 : .line ( laddr - )
 	cr
 	dup >r ( laddr R:laddr )
@@ -70,89 +52,164 @@
 	loop
 ;
 
-variable problemCnt
-variable canRetry
-variable laddr
-: innerLoop ( sgn adj offset laddr - sgn adj' )
-	loopRange ( sgn adj end start+offset )
-	do ( sgn adj )
+
+variable direction
+: detectDirection ( - n )
+	0 direction !
+	laddrRange do
+		i c@ b->s
+		sgn direction +!
+	loop
+	direction @ sgn
+	dup direction !
+;
+
+variable wdPos
+: wrongDirection ( - cnt )
+	-1 wdPos !
+	direction @ 0 ( dir cnt )
+	laddrRange do ( dir cnt )
+		over ( d c d )
+		i c@ b->s ( d c d v )
+		sgn = not if
+			1+ ( dir cnt+1 )
+			i laddr @ line@addr - wdPos !
+		then
+		dup 1 > if leave then
+	loop
+	swap drop ( cnt )
+;
+
+: ?diffFail ( sgn v - sgn t/f )
+	2dup sgn = not if ( sgn different or 0 )
+		drop
+		1 exit
+	then
+	abs 3 > ( oor? )
+;
+
+variable remPos
+variable valPPos
+variable valPCount
+: validate ( remPos - problemPos problemCnt )
+	laddr @ line@addr + ( absolutePos )
+	remPos !
+	-1 valPPos !
+	0 valPCount !
+	direction @ 0 ( sgn adj:0 )
+	laddrRange do ( sgn adj )
 		i c@ b->s ( sgn adj v )
-		+ ( sgn v' )
-		?fail1 ( sgn fail1 )
-		dup problemCnt +!
-		if ( problem )
-			i c@ b->s
-			." remove " dup .
-		else
-			0
+		i remPos @ = if
+			swap drop ( sgn v )
+			cr ." adj set to " dup .
+		else ( sgn adj v )
+			+ ( sgn v' )
+			?diffFail ( sgn fail1 )
+			if ( problem )
+				1 valPCount +!
+				i laddr @ line@addr -
+				valPPos !
+			then
+			0 ( sgn adj )
 		then ( sgn adj )
-		problemCnt @ 1 > if ( terminate )
+		valPCount @ 1 > if ( terminate )
 			leave
 		then
 	loop
+	2drop
+	valPPos @
+	valPCount @
 ;
+
 : isSafe ( laddr - t/f )
 	dup .line
-	0 problemCnt !
-	0 canRetry !
-	dup laddr ! ( laddr )
-	line@addr 1+ ( start+1 )
-	c@ b->s ( v0 )
-	( special test when sign is not known )
-	?fail0 ( sgn fail0 )
-	dup problemCnt +!
-	if ( not safe )
-		." try remove 1st "
+	laddr !
+	detectDirection 0= if
+		cr ." can't detect dir, so it's wrong"
+		0 exit
+	then
+	wrongDirection
+	dup 1 > if
+		cr ." can't correct more than 2 dir errors"
 		drop
-		laddr @ line@addr 2+ ( start+offset )
-		( retry )
-		c@ b->s ( v )
-		( dup .)
-		?fail0 ( sgn fail0 )
-		dup problemCnt +!
-		if ( not safe )
-			." remove 2nd "
-		then
-		( .s)
-		3
-	else
-		2
-	then ( sgn offset )
-	( first possibility: )
-	( no removal or 1st element removed )
-	0 swap ( sgn adj:0 offset )
-	( loop diffs when sign is known )
-	laddr @ ( sgn adj offset laddr )
-	problemCnt @
-	dup 0> if
-		1 canRetry !
+		0 exit
 	then
-	2 < if ( sgn adj offset laddr )
-		innerLoop
-	else
-		2drop
-	then ( sgn adj' )
-	2drop ( )
-	cr problemCnt @ . ." problems "
-	problemCnt @ 2 < if
-		1 ( safe )
-	else
-		canRetry @ if
-			cr ." try remove 2nd "
-			( where to find laddr? )
-			laddr @ line@addr dup 1+ ( a0 a1 )
-			c@ b->s ( a0 v1 )
-			swap 2+ c@ b->s ( v1 v2 )
-			over + sgn ( v1 sgn[v1+v2])
-			swap ( sgn adj )
-			2 laddr @ ( sgn adj offset laddr )
-			1 problemCnt !
-			innerLoop
+	0= if
+		( no wrong direction )
+		( good or can be corrected by dropping )
+		( first element or last element )
+		-1 validate ( pos cnt )
+		dup 0= if
+			( no problems )
 			2drop
+			1 exit
 		then
-		cr problemCnt @ . ." problems "
-		problemCnt @ 2 <
+		1 = if
+			( 1 problem )
+			dup ( pos pos )
+			1 = swap ( p=1? pos )
+			laddr @ line@cnt 1- = ( p=1? p=last? )
+			or if
+				( can be corrected )
+				1 exit
+			else
+				cr ." no wrong dir, 1 problem, not first nor last"
+				0 exit
+			then
+		else
+			cr ." more than 1 problem"
+			drop
+			0 exit
+		then
+	else
+		cr ." one wrong direction " wdPos ?
+		wdPos @ dup ( pos pos )
+		1 = swap ( p=1? pos )
+		laddr @ line@cnt 1- = ( p=1? p=last? )
+		or if
+			( if it's first or last )
+			( check dropping it )
+			-1 validate ( pos cnt )
+			1 = if
+				dup ( pos pos )
+				1 = swap ( p=1? pos )
+				laddr @ line@cnt 1- = ( p=1? p=last? )
+				or if
+					( can be corrected )
+					1 exit
+				else
+					cr ." ??? "
+				then
+			else
+				drop
+				cr ." first or last wrong dir, but other problem too"
+			then
+		then
+		wdPos @
+		1 > if
+			( check merging with previous )
+			wdPos @ 1- validate ( pos cnt )
+			swap drop ( cnt )
+			0= if
+				1 exit
+			else
+				cr ." merge with prev didn't help"
+			then
+		then
+		wdPos @
+		laddr @ line@cnt 1-
+		< if
+			( check merging with next )
+			wdPos @ validate ( pos cnt )
+			swap drop ( cnt )
+			0= if
+				1 exit
+			else
+				cr ." merge with next didn't help"
+			then
+		then
 	then
+	0
 ;
 
 variable safeCnt
