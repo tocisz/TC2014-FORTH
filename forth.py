@@ -675,14 +675,9 @@ asm_word("SPSTORE:sp!", """
 	JP	NEXT
 """)
 
-# TODO this is not correct!
-# use ADD	A,IXH
-# or undocumented
-# 	LD	E,IXH
-#	LD	D,IXL
 asm_word("RPFETCH:rp@", """
-	LD	E,(IX)
-	LD	D,(IX+1)
+	LD	D,IXH
+	LD	E,IXL
 	EX	DE,HL
 	JP	NEXTS1			;Save & NEXT
 """)
