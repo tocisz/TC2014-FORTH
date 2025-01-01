@@ -9,11 +9,21 @@
 void cat_with_delay(FILE *file, int delay, int newline_delay) {
     int ch;
     while ((ch = fgetc(file)) != EOF) {
+        if (ch == '\n') {
+            ch = '\r'; // convert LF to CR
+        } else if (ch == '\t') {
+            ch = ' '; // convert tab to space
+        }
         putchar(ch);
-        fflush(stdout);       // Ensure each character is printed immediately
+        if (delay != 0) {
+            fflush(stdout);
+        }
 
         // Apply delay based on character
-        if (ch == '\n') {
+        if (ch == '\r') {
+            if (delay == 0) {
+                fflush(stdout);
+            }
             usleep(newline_delay);
         } else {
             usleep(delay);
