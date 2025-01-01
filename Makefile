@@ -10,7 +10,7 @@ LD_FILES := $(wildcard *.ld)
 OBJ_FILES := forth.o const.o
 OBJ_FILES_ROM := int32k.o $(OBJ_FILES)
 
-all: rom.bin ram.hex tools
+all: rom.bin ram.hex
 
 rom.bin: forth.rom
 	$(OBJCOPY) -O binary -j.rom $< $@
