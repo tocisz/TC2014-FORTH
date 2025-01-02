@@ -184,6 +184,16 @@ variable scratch 10 allot
 	then ( len )
 ;
 
+: parseInt ( pos len - n )
+	over + 32 swap c! ( ensure termination )
+	1- number
+	drop
+;
+
+: storeInt ( pos len - )
+	parseInt ,
+;
+
 variable mark1
 variable mark2
 variable handler \ called on recognized word
@@ -205,25 +215,28 @@ variable handler \ called on recognized word
 		then
 		accept = if ( state' pos )
 			\ from mark1 to mark2
-			cr
 			mark1 @ mark2 @ ( state' pos mark1 mark2 )
 			copyToScratch ( state' pos len )
 			scratch swap 1- ( state' pos scratch len )
-			handler @ execute ( state' pos )
+			storeInt ( state' pos )
 			\ from mark2 acc position
-			space
 			dup mark2 @ swap ( state' pos marker pos )
 			copyToScratch ( state' pos len )
 			scratch swap ( state' pos scratch len )
-			handler @ execute ( state' pos )
+			storeInt ( state' pos )
+			46 emit
 		then ( state' pos )
 		drop ( state' )
 	repeat
 ;
 
-' type cfa handler !
-
+variable nums
+variable cnt
 : scanMul ( - )
+	0 cnt !
+	here nums !
 	S0 @ scan
+	here nums @ - ( bytes )
+	2u/ cnt !
 ;
 scanMul
