@@ -1,31 +1,33 @@
 cold
 \ flags
-1 constant accept
-2 constant marker1
-3 constant marker2
+1 constant a:mul
+2 constant a:m1
+3 constant a:m2
+4 constant a:end
 
-variable S0
-variable S1
-variable S7
+variable s:0
+variable s:m
+variable s:CR
 
-: handleMCR ( key - state flag )
+: rStart ( key dptr - state flag )
+	drop
 	dup 109 = if \ m
 		drop
-		S1 @ 0
+		s:m @ 0
 		exit
 	then
 	13 = if \ CR
-		S7 @ 0
+		s:CR @ 0
 	else
-		S0 @ 0
+		s:0 @ 0
 	then
 ;
 
 \ args under dptr: 0) next state 2) letter to recognize 3) flags
 \ letter in args leads to state in args
-\ letter "m" leads to S1
-\ CR leads to S7
-\ any other leads to S0
+\ letter "m" leads to s:m
+\ CR leads to s:CR
+\ any other leads to s:0
 : rChr ( key dptr - state flag )
 	>r ( key R:dptr )
 	\ dup emit
@@ -38,7 +40,7 @@ variable S7
 	else
 		rdrop
 	then ( key )
-	handleMCR
+	0 rStart
 ;
 
 : isNotDigit ( key - flag )
@@ -49,9 +51,9 @@ variable S7
 ;
 
 \ [0-9] leads to state in args
-\ letter "m" leads to S1
-\ CR leads to S7
-\ any other leads to S0
+\ letter "m" leads to s:m
+\ CR leads to s:CR
+\ any other leads to s:0
 : rDigit ( key dptr - state flag )
 	>r ( key R:dptr )
 	dup isNotDigit if \ not a digit
@@ -62,7 +64,7 @@ variable S7
 		swap 2+ c@ ( state flag )
 		exit
 	then ( key )
-	handleMCR
+	0 rStart
 ;
 
 \ like rChr but loop when key is digit
@@ -76,32 +78,12 @@ variable S7
 	then
 ;
 
-\ args under dptr: none
-\ letter "m" leads to S1
-\ CR returns state 0
-\ any other leads to S0
-: rCR ( key dptr - state flag )
-	drop ( key )
-	dup 109 = if \ m
-		S1 @ 0
-		drop exit
-	then
-	13 = if \ CR
-		0 0
-	else
-		S0 @ 0
-	then
-;
+\ automaton for `mul([0-9]+,[0-9]+)` -> a:mul
+\ and `\n\n` -> a:end
+here s:0 !
+' rStart cfa , \ ignores dptr
 
-\ automaton for `mul([0-9]+,[0-9]+)` (accept)
-\ and `\n\n` (terminate)
-here S0 !
-' rChr cfa ,
-here 4 + , \ next state
-109 c, \ m
-0 c,
-
-here S1 !
+here s:m !
 ' rChr cfa ,
 here 4 + , \ next state
 117 c, \ u
@@ -119,7 +101,7 @@ here 4 + , \ next state
 
 ' rDigit cfa ,
 here 3 + , \ next state
-marker1 c,
+a:m1 c,
 
 ' rDigitLoop cfa ,
 here 4 + , \ next state
@@ -128,15 +110,18 @@ here 4 + , \ next state
 
 ' rDigit cfa ,
 here 3 + , \ next state
-marker2 c,
+a:m2 c,
 
 ' rDigitLoop cfa ,
-S0 @ , \ next state
+s:0 @ , \ next state
 41 c, \ )
-accept c,
+a:mul c,
 
-here S7 !
-' rCR cfa ,
+here s:CR !
+' rChr cfa ,
+s:CR @ , \ loop
+13 c, \ CR
+a:end c,
 
 variable ringBuf 16 allot
 here constant ringBufEnd
@@ -197,37 +182,47 @@ variable scratch 10 allot
 variable mark1
 variable mark2
 variable handler \ called on recognized word
+
+: handleAction ( pos flag - pos flag )
+	dup a:m1 = if
+		over mark1 !
+		exit
+	then
+	dup a:m2 = if
+		over mark2 !
+		exit
+	then
+	dup a:mul = if ( pos flag )
+		>r ( pos R:flag )
+		\ from mark1 to mark2
+		mark1 @ mark2 @ ( pos mark1 mark2 )
+		copyToScratch ( pos len )
+		scratch swap 1- ( pos scratch len )
+		storeInt ( pos )
+		\ from mark2 acc position
+		dup mark2 @ swap ( pos marker pos )
+		copyToScratch ( pos len )
+		scratch swap ( pos scratch len )
+		storeInt ( pos )
+		46 emit
+		r> ( pos flag )
+	then ( pos flag )
+;
+
 \ scan input according to an automaton, starting from a given state
 \ calls handler when word is recognized
 : scan ( state - )
 	begin ( state )
-		dup while \ state is non-zero
 		key ( state key )
 		dup ringBufWrite >r ( state key R:pos )
 		swap dup 2+ swap ( key dptr state )
 		@ execute ( state' flag )
 		r> swap ( state' pos flag )
-		dup marker1 = if
-			over mark1 !
-		then
-		dup marker2 = if
-			over mark2 !
-		then
-		accept = if ( state' pos )
-			\ from mark1 to mark2
-			mark1 @ mark2 @ ( state' pos mark1 mark2 )
-			copyToScratch ( state' pos len )
-			scratch swap 1- ( state' pos scratch len )
-			storeInt ( state' pos )
-			\ from mark2 acc position
-			dup mark2 @ swap ( state' pos marker pos )
-			copyToScratch ( state' pos len )
-			scratch swap ( state' pos scratch len )
-			storeInt ( state' pos )
-			46 emit
-		then ( state' pos )
-		drop ( state' )
-	repeat
+		dup if
+			handleAction
+		then ( state' pos flag )
+		swap drop ( state' flag )
+	a:end = until
 ;
 
 variable nums
@@ -247,7 +242,7 @@ variable len
 : scanMul ( - )
 	0 len !
 	here nums !
-	S0 @ scan
+	s:0 @ scan
 	here nums @ - ( bytes )
 	len !
 	cr ." Sum of multiplications is... "
