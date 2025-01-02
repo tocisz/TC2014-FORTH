@@ -1305,6 +1305,7 @@ X_DOES:
 
 word("COUNT:count", ": dup 1+ swap c@ ;s") # Convert string at addr to addr + length
 
+# ( addr len - )
 word("TYPE:type", """:
 ?dup 0branch 24
 	over + swap
@@ -1460,6 +1461,7 @@ r>
 # to signed double integer number, using the current base.
 # If a decimal point is encountered in the text, its position will be given in DPL.
 # If numeric conversion is not possible, issue an error message.
+# This implementation ignores byte count and parses until space.
 # ( addr – d )
 word("NUMBER:number", """:
 0 0 rot
