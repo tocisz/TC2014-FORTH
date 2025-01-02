@@ -41,17 +41,20 @@ variable S7
 	handleMCR
 ;
 
+: isNotDigit ( key - flag )
+	dup
+	48 <
+	swap 57 >
+	or
+;
+
 \ [0-9] leads to state in args
 \ letter "m" leads to S1
 \ CR leads to S7
 \ any other leads to S0
 : rDigit ( key dptr - state flag )
 	>r ( key R:dptr )
-	\ dup emit
-	dup dup ( 3xkey )
-	48 <
-	swap 57 >
-	or if \ not a digit
+	dup isNotDigit if \ not a digit
 		rdrop
 	else ( key )
 		drop r> ( dptr )
@@ -64,10 +67,7 @@ variable S7
 
 \ like rChr but loop when key is digit
 : rDigitLoop ( key dptr - state flag )
-	over dup ( key dptr key key )
-	48 <
-	swap 57 >
-	or if \ not a digit
+	over isNotDigit if \ not a digit
 		rChr
 	else
 		swap drop ( dptr )
