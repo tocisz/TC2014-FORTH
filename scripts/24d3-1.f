@@ -231,12 +231,26 @@ variable handler \ called on recognized word
 ;
 
 variable nums
-variable cnt
+variable len
+: msum
+	0. ( sum )
+	nums @ dup ( sum addr addr )
+	len @ + swap ( sum end start )
+	do
+		i @
+		i cell + @ ( msum a b )
+		m* ( msum a*b )
+		d+ ( msum' )
+	[ 2 cells ] literal +loop
+;
+
 : scanMul ( - )
-	0 cnt !
+	0 len !
 	here nums !
 	S0 @ scan
 	here nums @ - ( bytes )
-	2u/ cnt !
+	len !
+	cr ." Sum of multiplications is... "
+	msum d.
 ;
 scanMul
