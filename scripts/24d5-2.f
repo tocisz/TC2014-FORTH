@@ -127,19 +127,19 @@ orderLength @
 
 90 constant rankSize
 variable rank rankSize 2- allot
-: rankInit ( - )
-	rank rankSize erase
-;
+rank rankSize erase
 : rank@ ( n - r )
 	11 - rank + c@
 ;
 : rank! ( r n - )
 	11 - rank + c!
 ;
-rankInit
 variable rankTmp
+variable depth
 \ lazily evaluated rank for a number
 : rank ( n - rank )
+	1 depth +!
+	." d" depth @ u.
 	dup rank@ ( n r )
 	?dup if ( n r )
 		swap drop
@@ -160,7 +160,12 @@ variable rankTmp
 		rankTmp @ 1+ ( rank )
 		dup r> rank! ( rank )
 	then
+	-1 depth +!
 ;
+\ depth goes to 53 (x2 words), do we have enough space?
+\ making return stack bigger by 512 bytes increased depth to 309
+\ before it crashed
+\ but it shouldn't be that big - is there a loop in a graph?
 
 \ compare elements by rank
 \ to sort them by decreasing rank
