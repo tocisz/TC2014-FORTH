@@ -52,46 +52,24 @@
 
 variable direction
 
-\ 0 ^
-\ 1 >
-\ 2 v
-\ 3 <
+\ 0 >
+\ 1 v
+\ 2 <
+\ 3 ^
 : step ( - )
 	direction @
-	dup 0= if
-		drop
-		-1 y +!
-	else
-		dup 1 = if
-			drop
-			1 x +!
-		else
-			2 = if
-				1 y +!
-			else
-				-1 x +!
-			then
-		then
-	then
+	2 and if -1 else 1 then
+	direction @
+	1 and if y else x then
+	+!
 ;
 
 : stepback ( - )
 	direction @
-	dup 0= if
-		drop
-		1 y +!
-	else
-		dup 1 = if
-			drop
-			-1 x +!
-		else
-			2 = if
-				-1 y +!
-			else
-				1 x +!
-			then
-		then
-	then
+	2 and if 1 else -1 then
+	direction @
+	1 and if y else x then
+	+!
 ;
 
 : rotate
@@ -109,24 +87,9 @@ variable direction
 
 variable sx
 variable sy
-: inLoop ( - f )
-	direction @ if
-		\ direction is not up
-		0 exit
-	then
-	sx @ x @ - if
-		\ x is not starting x
-		0 exit
-	then
-	sy @ y @ = \ y is starting y
-;
-
 : walk ( - )
-	0 direction !
+	3 direction !
 	begin
-		inLoop if
-			exit
-		then
 		x @ y @ cktab@ ( v )
 		dup 0< if
 			drop
@@ -157,8 +120,10 @@ variable cnt
 ;
 
 : solve
+	cr ." Walking..."
 	walk
-	\ .tab
-	cr ." count = " count .
+	cr ." Counting..."
+	count
+	cr ." count = " .
 ;
 solve
