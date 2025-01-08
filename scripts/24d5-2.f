@@ -2,6 +2,7 @@
 
 \ Observation: Page numbers are from 11 to 99
 \ Observation: No more than 70 characters in a line
+\ Observation: Order graph has cycles
 \ 2. Sort ordering by first number
 \ 3. Define rank as depth in a graph
 \ 4. For each sequence
@@ -127,7 +128,9 @@ orderLength @
 
 90 constant rankSize
 variable rank rankSize 2- allot
-rank rankSize erase
+: rankInit ( - )
+	rank rankSize erase
+;
 : rank@ ( n - r )
 	11 - rank + c@
 ;
@@ -135,11 +138,8 @@ rank rankSize erase
 	11 - rank + c!
 ;
 variable rankTmp
-variable depth
 \ lazily evaluated rank for a number
 : rank ( n - rank )
-	1 depth +!
-	." d" depth @ u.
 	dup rank@ ( n r )
 	?dup if ( n r )
 		swap drop
@@ -150,22 +150,22 @@ variable depth
 		succInit ( addr )
 		begin
 			r@ succNext while ( addr' m )
-			recurse \ rank(m)
-			rankTmp @ max
-			rankTmp ! ( addr' )
-			35 emit \ '#'
+			\ skip if it's not in the sequence
+			dup bsTest if
+				recurse \ rank(m)
+				rankTmp @ max
+				rankTmp ! ( addr' )
+				35 emit \ '#'
+			else
+				drop
+			then
 		repeat
 		drop
 		\ rank(n) = max_{m in succ(n)} rank(m) + 1
 		rankTmp @ 1+ ( rank )
 		dup r> rank! ( rank )
 	then
-	-1 depth +!
 ;
-\ depth goes to 53 (x2 words), do we have enough space?
-\ making return stack bigger by 512 bytes increased depth to 309
-\ before it crashed
-\ but it shouldn't be that big - is there a loop in a graph?
 
 \ compare elements by rank
 \ to sort them by decreasing rank
@@ -212,13 +212,6 @@ variable depth
 	drop
 ;
 
-\ : x ( ptr len - )
-\ 	0 do ( ptr )
-\ 		dup i + c@ .
-\ 	loop
-\ 	drop
-\ ;
-
 variable seqStart
 variable failed
 \ check whether succ(v) is in the prefix
@@ -256,24 +249,20 @@ variable midSum
 		begin ( ptr )
 			dup c@ ( ptr v )
 			dup while \ non-zero
-			failed @ if
-				drop
-			else
-				\ should we allow repeating numbers?
-				dup bsSet ( ptr v )
-				checkOne ( ptr )
-			then ( ptr )
+			failed @ not if
+				dup checkOne ( ptr v )
+			then ( ptr v )
+			bsSet ( ptr )
 			1+ ( ptr' )
 		repeat
 		drop ( ptr )
 		failed @ if
 			46 emit \ '.'
+			rankInit
 			dup seqStart @ - ( ptr len )
 			seqStart @ swap ( ptr start len )
-			\ 2dup ( ptr start len start len )
 			\ sort by rank
 			insertsort1 ( ptr )
-			\ cr x ( ptr )
 			seqStart @ over mid1 c@
 			midSum +!
 		else

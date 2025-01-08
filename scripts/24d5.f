@@ -34,15 +34,6 @@ variable orderLength
 	orderLength !
 ;
 
-: .pairsTab ( addr len - )
-	over + swap
-	do
-		cr
-		i c@ .
-		i 1+ c@ .
-	2 +loop
-;
-
 : isDigit ( key - flag )
 	dup 48 <
 	swap 57 >
@@ -105,6 +96,3 @@ readData order sequences
 61,13,29
 97,13,75,29,47
 
-order orderLength @ .pairsTab
-sequences 32 dump
-numOfSequences ?
